@@ -1,16 +1,10 @@
-# Compiled class file
+# ── Java / Maven ──────────────────────────────────────────────
 *.class
-
-# Log file
 *.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Package files
 *.jar
 *.war
 *.nar
@@ -19,6 +13,72 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Virtual machine crash logs
 hs_err_pid*
 replay_pid*
+
+# Maven build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ── IDEs ──────────────────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.code-workspace
+.settings/
+.project
+.classpath
+.factorypath
+nbactions.xml
+nb-configuration.xml
+
+# ── Spring Boot ───────────────────────────────────────────────
+spring-shell.log
+
+# ── Environment & secrets ─────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Docker ────────────────────────────────────────────────────
+# (docker-compose.yml and Dockerfile are tracked)
+
+# ── macOS ─────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ── Linux ─────────────────────────────────────────────────────
+*~
+
+# ── Windows ───────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── AI assistants (personal workflow) ─────────────────────────
+.cursor/
+.cursorrules
+.claude/*
+!.claude/CLAUDE.md
+!.claude/settings.json
+.agents/
+.github/agents/
+.github/skills/
+.github/copilot-instructions.md
+.kilocode/
+.gemini/
+.codex/
+AGENTS.md
+GEMINI.md
+CODEX.md
+skills-lock.json
