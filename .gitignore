@@ -1,57 +1,99 @@
-# Compiled class file
-*.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
+##############################
+## Java
+##############################
 .mtj.tmp/
-
-# Package Files
+*.class
 *.jar
 *.war
-*.nar
 *.ear
-*.zip
-*.tar.gz
-*.rar
-
-# Virtual machine crash logs
+*.nar
 hs_err_pid*
 replay_pid*
 
-# Maven build output
+##############################
+## Maven
+##############################
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+pom.xml.bak
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
 
-# IDE files
+##############################
+## Gradle
+##############################
+bin/
+build/
+.gradle
+.gradletasknamecache
+gradle-app.setting
+!gradle-wrapper.jar
+
+##############################
+## IntelliJ
+##############################
+out/
 .idea/
+.idea_modules/
 *.iml
-*.iws
 *.ipr
+*.iws
+
+##############################
+## Eclipse
+##############################
+.settings/
+tmp/
+.metadata
 .classpath
 .project
-.settings/
-.factorypath
-.vscode/
+*.tmp
+*.bak
 *.swp
-*.swo
+*~.nib
+local.properties
+.loadpath
+.factorypath
 
-# Spring Boot
-spring-shell.log
-.mvn/
+##############################
+## NetBeans
+##############################
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
 
-# Environment variables (never commit secrets!)
+##############################
+## Visual Studio Code
+##############################
+.vscode/
+.code-workspace
+
+##############################
+## OS X
+##############################
+.DS_Store
+
+##############################
+## Miscellaneous
+##############################
+*.log
+
+##############################
+## Environment Variables
+##############################
 .env
 
-# OS files
-.DS_Store
-Thumbs.db
 
-# Docker
-.docker/
+##############################
+## Scripts
+##############################
+/scripts/*

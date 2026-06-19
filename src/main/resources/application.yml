@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  main:
+    banner-mode: "off"
+  datasource:
+    url: "${DB_URL:jdbc:mysql://localhost:3306/resume_matcher?useUnicode=true&characterEncoding=utf8}"
+    username: "${DB_USER:root}"
+    password: "${DB_PASSWORD}"
+    driver-class-name: "com.mysql.cj.jdbc.Driver"
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: "org.hibernate.dialect.MySQLDialect"
+        format_sql: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  packages-to-scan: se.debageri.api.controller
+
+logging:
+  level:
+    root: INFO
+    org.springframework: ERROR
+    org.springframework.boot: ERROR
+    org.hibernate: ERROR
+    org.hibernate.SQL: OFF
+    com.zaxxer.hikari: ERROR
