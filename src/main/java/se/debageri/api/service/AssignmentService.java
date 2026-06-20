@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import se.debageri.api.entity.Assignment;
 import se.debageri.api.exception.AssignmentNotFoundException;
 import se.debageri.api.exception.DuplicateResourceException;
+import se.debageri.api.repository.AssignmentIndexRepository;
 import se.debageri.api.repository.AssignmentRepository;
 import se.debageri.api.repository.AssignmentSpecification;
 import se.debageri.api.repository.ResumeMatchRepository;
@@ -28,6 +29,7 @@ public class AssignmentService {
 
 	private final AssignmentRepository assignmentRepository;
 	private final ResumeMatchRepository resumeMatchRepository;
+	private final AssignmentIndexRepository assignmentIndexRepository;
 	private final ElasticJobSearchService elasticJobSearchService;
 
 	public Page<Assignment> findAll(Long jobId, String title, String client, String location, String portal,
@@ -93,6 +95,8 @@ public class AssignmentService {
 				try {
 					elasticJobSearchService.deleteByAssignmentIds(ids);
 					log.info("Deleted assignment id={} from Elasticsearch", id);
+					assignmentIndexRepository.deleteById(id);
+					log.info("Deleted assignment index for id={}", id);
 				} catch (Exception e) {
 					log.error("Failed to delete assignment id={} from Elasticsearch: {}", id, e.getMessage(), e);
 				}
