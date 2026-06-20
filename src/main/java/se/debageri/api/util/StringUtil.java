@@ -1,7 +1,6 @@
 package se.debageri.api.util;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -26,14 +25,6 @@ public class StringUtil {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to read PDF: " + e.getMessage(), e);
 		}
-	}
-
-	public static String nvl(Object o) {
-		return o == null ? "" : String.valueOf(o);
-	}
-
-	public static String join(List<String> xs) {
-		return xs == null ? "" : String.join(", ", xs);
 	}
 
 	public static String safeLimit(String s, int maxChars) {

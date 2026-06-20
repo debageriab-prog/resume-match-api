@@ -2,10 +2,8 @@ package se.debageri.api.service;
 
 import static se.debageri.api.util.StringUtil.isBlank;
 
-import java.util.List;
 import java.util.Optional;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -14,8 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import se.debageri.api.dto.AssignmentSeekerInfoDTO;
@@ -181,20 +177,6 @@ public class ResumeService {
 
 		log.info("Created assignmentSeeker id={} email={}", saved.getId(), saved.getEmail());
 		return saved;
-	}
-
-	public static List<String> toList(String json) {
-		if (StringUtils.isEmpty(json)) {
-			return List.of();
-		}
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			return mapper.readValue(json, new TypeReference<>() {
-			});
-		} catch (JsonProcessingException e) {
-			log.error("Error parsing JSON to List<String>: {}", json);
-		}
-		return List.of();
 	}
 
 	private String writeJson(Object obj) {
