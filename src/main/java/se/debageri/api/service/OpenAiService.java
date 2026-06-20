@@ -2,22 +2,16 @@ package se.debageri.api.service;
 
 import static se.debageri.api.util.StringUtil.*;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
-import com.openai.models.embeddings.CreateEmbeddingResponse;
-import com.openai.models.embeddings.EmbeddingCreateParams;
-import com.openai.models.embeddings.EmbeddingModel;
 import com.openai.models.responses.Response;
 import com.openai.models.responses.ResponseCreateParams;
 
 import se.debageri.api.dto.AssignmentSeekerInfoDTO;
-import se.debageri.api.dto.FitEvaluationDTO;
 import se.debageri.api.dto.ResumeProfileDTO;
 
 import lombok.RequiredArgsConstructor;
@@ -31,11 +25,7 @@ public class OpenAiService {
 	private final OpenAIClient client;
 	private final ObjectMapper mapper;
 
-	private static final EmbeddingModel EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_3_SMALL;
-
 	public static final String PROFILE_MODEL = "gpt-4o";
-
-	public static final String JUDGE_MODEL = "gpt-4o-mini";
 
 	/**
 	 * Extracts the candidate's identity (first name, last name, email) from raw
@@ -136,91 +126,6 @@ public class OpenAiService {
 			return mapper.readValue(json, ResumeProfileDTO.class);
 		} catch (Exception e) {
 			throw new RuntimeException("Model did not return parseable JSON. Raw output:\n" + json, e);
-		}
-	}
-
-	/**
-	 * Generates a dense vector embedding for the given text.
-	 *
-	 * @param text
-	 *            the input text to embed
-	 * @return a {@code float[]} representing the embedding vector
-	 */
-	public float[] embed(String text) {
-		EmbeddingCreateParams params = EmbeddingCreateParams.builder().model(EMBEDDING_MODEL).input(text).build();
-
-		CreateEmbeddingResponse resp = client.embeddings().create(params);
-
-		List<Float> vec = resp.data().getFirst().embedding();
-
-		float[] out = new float[vec.size()];
-		for (int i = 0; i < vec.size(); i++) {
-			out[i] = vec.get(i);
-		}
-		return out;
-	}
-
-	/**
-	 * Evaluates how well a candidate fits an assignment using the judge LLM.
-	 *
-	 * @param resumeProfileJson
-	 *            the candidate's structured profile serialized as JSON
-	 * @param assignmentText
-	 *            the full text of the assignment/job description
-	 * @param assignmentTitle
-	 *            optional title of the assignment; may be {@code null}
-	 * @return a {@link FitEvaluationDTO} containing a fit score, decision, missing
-	 *         must-haves, and reasons
-	 * @throws RuntimeException
-	 *             if the model response cannot be parsed as JSON
-	 */
-	public FitEvaluationDTO evaluateFit(String resumeProfileJson, String assignmentText, String assignmentTitle) {
-		String schema = """
-				Return ONLY valid JSON. No markdown, no extra text.
-				Schema:
-				{
-				  "fit": integer,              // 0..100
-				  "decision": string,          // "strong_yes"|"yes"|"maybe"|"no"
-				  "missing_must_haves": string[],
-				  "reasons": string[]          // short bullet-like reasons (max 6)
-				}
-				Rules:
-				- Be strict about must-have skills. If core stack differs, fit should be low (<40).
-				- Consider seniority/role mismatch (e.g., Lead Architect vs Senior Developer).
-				- DO not Consider location.
-				- Keep reasons concise, also keep reason in English even if input is another language.
-				- Try to mention missing must-have if possible instead of put everything in reason section.
-				- You must make a decision on every candidate, empty decision is not allowed.
-				""";
-
-		String input = """
-				You are a strict technical recruiter.
-				Evaluate how well this candidate fits the assignment.
-				Return ONLY a raw JSON object. Do NOT wrap in ``` or markdown. Output must start with '{' and end with '}'.
-
-				%s
-
-				CANDIDATE_PROFILE_JSON:
-				%s
-
-				ASSIGNMENT_TITLE:
-				%s
-
-				ASSIGNMENT_TEXT:
-				%s
-				"""
-				.formatted(schema, safeLimit(resumeProfileJson, 12000), assignmentTitle == null ? "" : assignmentTitle,
-						safeLimit(assignmentText, 12000));
-
-		ResponseCreateParams params = ResponseCreateParams.builder().model(JUDGE_MODEL).input(input).build();
-
-		Response resp = client.responses().create(params);
-		String json = stripJsonCodeFences(extractText(resp));
-		log.trace("OpenAI Fit evaluation JSON: {}", json);
-		try {
-			return mapper.readValue(json, FitEvaluationDTO.class);
-		} catch (Exception e) {
-			throw new RuntimeException("Fit evaluation JSON was not parseable. Raw:\n" + json, e);
 		}
 	}
 
