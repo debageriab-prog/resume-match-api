@@ -64,8 +64,8 @@ Returns a summary view `(id, owner, managerEmail, notificationType)` — full PD
 | `PUT`    | `/{id}`                       | Update score, reasons, decision           |
 | `DELETE` | `/{id}`                       | Delete                                    |
 
-**Swagger UI** → `http://localhost:8080/swagger-ui.html`
-**OpenAPI spec** → `http://localhost:8080/api-docs`
+**Swagger UI** → `http://localhost:8081/swagger-ui.html`
+**OpenAPI spec** → `http://localhost:8081/api-docs`
 
 ---
 
@@ -136,7 +136,7 @@ DB_ROOT_PASSWORD=rootpassword
 docker-compose up --build
 ```
 
-The API will be available at `http://localhost:8080`.
+The API will be available at `http://localhost:8081`.
 
 ### 4. Run locally
 
