@@ -34,21 +34,21 @@ public class ResumeMatchController {
 	@Operation(summary = "Get resume match by ID")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Match found"),
 			@ApiResponse(responseCode = "404", description = "Match not found")})
-	public ResponseEntity<ResumeMatch> getById(@Parameter(description = "Match ID") @PathVariable Long id) {
+	public ResponseEntity<ResumeMatch> getById(@Parameter(description = "Match ID") @PathVariable("id") Long id) {
 		return ResponseEntity.ok(resumeMatchService.findById(id));
 	}
 
 	@GetMapping("/resume/{resumeId}")
 	@Operation(summary = "Get all matches for a resume, sorted by match percent descending")
 	public ResponseEntity<List<ResumeMatch>> getByResumeId(
-			@Parameter(description = "Resume ID") @PathVariable Long resumeId) {
+			@Parameter(description = "Resume ID") @PathVariable("resumeId") Long resumeId) {
 		return ResponseEntity.ok(resumeMatchService.findByResumeId(resumeId));
 	}
 
 	@GetMapping("/assignment/{assignmentId}")
 	@Operation(summary = "Get all matches for an assignment")
 	public ResponseEntity<List<ResumeMatch>> getByAssignmentId(
-			@Parameter(description = "Assignment ID") @PathVariable Long assignmentId) {
+			@Parameter(description = "Assignment ID") @PathVariable("assignmentId") Long assignmentId) {
 		return ResponseEntity.ok(resumeMatchService.findByAssignmentId(assignmentId));
 	}
 
@@ -64,7 +64,7 @@ public class ResumeMatchController {
 	@Operation(summary = "Update a resume match record")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Match updated"),
 			@ApiResponse(responseCode = "404", description = "Match not found")})
-	public ResponseEntity<ResumeMatch> update(@Parameter(description = "Match ID") @PathVariable Long id,
+	public ResponseEntity<ResumeMatch> update(@Parameter(description = "Match ID") @PathVariable("id") Long id,
 			@RequestBody ResumeMatch resumeMatch) {
 		return ResponseEntity.ok(resumeMatchService.update(id, resumeMatch));
 	}
@@ -73,7 +73,7 @@ public class ResumeMatchController {
 	@Operation(summary = "Delete a resume match record")
 	@ApiResponses({@ApiResponse(responseCode = "204", description = "Match deleted"),
 			@ApiResponse(responseCode = "404", description = "Match not found")})
-	public ResponseEntity<Void> delete(@Parameter(description = "Match ID") @PathVariable Long id) {
+	public ResponseEntity<Void> delete(@Parameter(description = "Match ID") @PathVariable("id") Long id) {
 		resumeMatchService.delete(id);
 		return ResponseEntity.noContent().build();
 	}

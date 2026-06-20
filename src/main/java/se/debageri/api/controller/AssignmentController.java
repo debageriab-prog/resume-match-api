@@ -42,7 +42,7 @@ public class AssignmentController {
 	@Operation(summary = "Get assignment by ID")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Assignment found"),
 			@ApiResponse(responseCode = "404", description = "Assignment not found")})
-	public ResponseEntity<Assignment> getById(@Parameter(description = "Assignment ID") @PathVariable Long id) {
+	public ResponseEntity<Assignment> getById(@Parameter(description = "Assignment ID") @PathVariable("id") Long id) {
 		return ResponseEntity.ok(assignmentService.findById(id));
 	}
 
@@ -58,7 +58,7 @@ public class AssignmentController {
 	@Operation(summary = "Update an assignment")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Assignment updated"),
 			@ApiResponse(responseCode = "404", description = "Assignment not found")})
-	public ResponseEntity<Assignment> update(@Parameter(description = "Assignment ID") @PathVariable Long id,
+	public ResponseEntity<Assignment> update(@Parameter(description = "Assignment ID") @PathVariable("id") Long id,
 			@RequestBody Assignment assignment) {
 		return ResponseEntity.ok(assignmentService.update(id, assignment));
 	}
@@ -67,7 +67,7 @@ public class AssignmentController {
 	@Operation(summary = "Delete an assignment and its related match records")
 	@ApiResponses({@ApiResponse(responseCode = "204", description = "Assignment deleted"),
 			@ApiResponse(responseCode = "404", description = "Assignment not found")})
-	public ResponseEntity<Void> delete(@Parameter(description = "Assignment ID") @PathVariable Long id) {
+	public ResponseEntity<Void> delete(@Parameter(description = "Assignment ID") @PathVariable("id") Long id) {
 		assignmentService.delete(id);
 		return ResponseEntity.noContent().build();
 	}

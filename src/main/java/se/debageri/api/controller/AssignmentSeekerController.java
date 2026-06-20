@@ -37,7 +37,7 @@ public class AssignmentSeekerController {
 	@Operation(summary = "Get assignment seeker by ID")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Seeker found"),
 			@ApiResponse(responseCode = "404", description = "Seeker not found")})
-	public ResponseEntity<AssignmentSeeker> getById(@Parameter(description = "Seeker ID") @PathVariable Long id) {
+	public ResponseEntity<AssignmentSeeker> getById(@Parameter(description = "Seeker ID") @PathVariable("id") Long id) {
 		return ResponseEntity.ok(assignmentSeekerService.findById(id));
 	}
 
@@ -54,7 +54,7 @@ public class AssignmentSeekerController {
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Seeker updated"),
 			@ApiResponse(responseCode = "404", description = "Seeker not found"),
 			@ApiResponse(responseCode = "409", description = "Email already in use")})
-	public ResponseEntity<AssignmentSeeker> update(@Parameter(description = "Seeker ID") @PathVariable Long id,
+	public ResponseEntity<AssignmentSeeker> update(@Parameter(description = "Seeker ID") @PathVariable("id") Long id,
 			@RequestBody AssignmentSeeker seeker) {
 		return ResponseEntity.ok(assignmentSeekerService.update(id, seeker));
 	}
@@ -63,7 +63,7 @@ public class AssignmentSeekerController {
 	@Operation(summary = "Delete an assignment seeker")
 	@ApiResponses({@ApiResponse(responseCode = "204", description = "Seeker deleted"),
 			@ApiResponse(responseCode = "404", description = "Seeker not found")})
-	public ResponseEntity<Void> delete(@Parameter(description = "Seeker ID") @PathVariable Long id) {
+	public ResponseEntity<Void> delete(@Parameter(description = "Seeker ID") @PathVariable("id") Long id) {
 		assignmentSeekerService.delete(id);
 		return ResponseEntity.noContent().build();
 	}

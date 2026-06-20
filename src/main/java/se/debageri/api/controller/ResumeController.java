@@ -47,7 +47,7 @@ public class ResumeController {
 	@Operation(summary = "Get resume summary by ID")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resume found"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
-	public ResponseEntity<ResumeSummaryDto> getById(@Parameter(description = "Resume ID") @PathVariable Long id) {
+	public ResponseEntity<ResumeSummaryDto> getById(@Parameter(description = "Resume ID") @PathVariable("id") Long id) {
 		return ResponseEntity.ok(toSummary(resumeService.findById(id)));
 	}
 
@@ -56,7 +56,7 @@ public class ResumeController {
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resumes retrieved"),
 			@ApiResponse(responseCode = "404", description = "Seeker not found")})
 	public ResponseEntity<Page<ResumeSummaryDto>> getByOwnerId(
-			@Parameter(description = "Seeker ID") @PathVariable Long ownerId,
+			@Parameter(description = "Seeker ID") @PathVariable("ownerId") Long ownerId,
 			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
 		return ResponseEntity.ok(resumeService.findByOwnerId(ownerId, pageable).map(this::toSummary));
 	}
@@ -76,7 +76,7 @@ public class ResumeController {
 	@Operation(summary = "Update a resume (fileName, contentType, pdfBytes, extractedText, profileJson, managerEmail, notificationType)")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resume updated"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
-	public ResponseEntity<ResumeSummaryDto> update(@Parameter(description = "Resume ID") @PathVariable Long id,
+	public ResponseEntity<ResumeSummaryDto> update(@Parameter(description = "Resume ID") @PathVariable("id") Long id,
 			@RequestBody Resume resume) {
 		return ResponseEntity.ok(toSummary(resumeService.update(id, resume)));
 	}
@@ -86,7 +86,7 @@ public class ResumeController {
 	@ApiResponses({@ApiResponse(responseCode = "204", description = "Resume deleted"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void delete(@Parameter(description = "Resume ID") @PathVariable Long id) {
+	public void delete(@Parameter(description = "Resume ID") @PathVariable("id") Long id) {
 		resumeService.delete(id);
 	}
 
