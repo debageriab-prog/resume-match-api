@@ -2,6 +2,7 @@ package se.debageri.api.controller;
 
 import jakarta.validation.constraints.Email;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -37,7 +38,8 @@ public class ResumeController {
 
 	@GetMapping
 	@Operation(summary = "Get all resumes (summary view) with pagination")
-	public ResponseEntity<Page<ResumeSummaryDto>> getAll(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+	public ResponseEntity<Page<ResumeSummaryDto>> getAll(
+			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
 		return ResponseEntity.ok(resumeService.findAll(pageable).map(this::toSummary));
 	}
 
@@ -55,7 +57,7 @@ public class ResumeController {
 			@ApiResponse(responseCode = "404", description = "Seeker not found")})
 	public ResponseEntity<Page<ResumeSummaryDto>> getByOwnerId(
 			@Parameter(description = "Seeker ID") @PathVariable Long ownerId,
-			@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
 		return ResponseEntity.ok(resumeService.findByOwnerId(ownerId, pageable).map(this::toSummary));
 	}
 

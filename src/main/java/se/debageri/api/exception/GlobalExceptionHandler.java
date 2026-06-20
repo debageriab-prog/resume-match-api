@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -23,6 +24,11 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(DuplicateResourceException.class)
 	public ResponseEntity<Map<String, Object>> handleDuplicate(DuplicateResourceException ex) {
 		return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT);
+	}
+
+	@ExceptionHandler(PropertyReferenceException.class)
+	public ResponseEntity<Map<String, Object>> handlePropertyReference(PropertyReferenceException ex) {
+		return buildErrorResponse("Invalid sort property: '" + ex.getPropertyName() + "'", HttpStatus.BAD_REQUEST);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

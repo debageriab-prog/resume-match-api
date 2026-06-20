@@ -1,5 +1,6 @@
 package se.debageri.api.controller;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -27,7 +28,8 @@ public class AssignmentSeekerController {
 
 	@GetMapping
 	@Operation(summary = "Get all assignment seekers with pagination")
-	public ResponseEntity<Page<AssignmentSeeker>> getAll(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+	public ResponseEntity<Page<AssignmentSeeker>> getAll(
+			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
 		return ResponseEntity.ok(assignmentSeekerService.findAll(pageable));
 	}
 

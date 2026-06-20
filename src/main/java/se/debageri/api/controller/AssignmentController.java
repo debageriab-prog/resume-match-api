@@ -1,5 +1,6 @@
 package se.debageri.api.controller;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -33,7 +34,7 @@ public class AssignmentController {
 			@Parameter(description = "Filter by client (partial match)") @RequestParam(required = false) String client,
 			@Parameter(description = "Filter by location (partial match)") @RequestParam(required = false) String location,
 			@Parameter(description = "Filter by portal (exact match)") @RequestParam(required = false) String portal,
-			@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
 		return ResponseEntity.ok(assignmentService.findAll(jobId, title, client, location, portal, pageable));
 	}
 
