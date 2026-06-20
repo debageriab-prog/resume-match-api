@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import se.debageri.api.entity.Assignment;
 import se.debageri.api.exception.AssignmentNotFoundException;
@@ -26,6 +28,7 @@ public class AssignmentService {
 
 	private final AssignmentRepository assignmentRepository;
 	private final ResumeMatchRepository resumeMatchRepository;
+	private final ElasticJobSearchService elasticJobSearchService;
 
 	public Page<Assignment> findAll(Long jobId, String title, String client, String location, String portal,
 			Pageable pageable) {
@@ -83,6 +86,18 @@ public class AssignmentService {
 
 		log.debug("Deleting Assignment row id={}", id);
 		assignmentRepository.deleteByIdIn(ids);
+
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				try {
+					elasticJobSearchService.deleteByAssignmentIds(ids);
+					log.info("Deleted assignment id={} from Elasticsearch", id);
+				} catch (Exception e) {
+					log.error("Failed to delete assignment id={} from Elasticsearch: {}", id, e.getMessage(), e);
+				}
+			}
+		});
 
 		log.info("Deleted assignment id={}", id);
 	}

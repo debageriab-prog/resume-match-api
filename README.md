@@ -49,8 +49,11 @@ Returns a summary view `(id, owner, managerEmail, notificationType)` — full PD
 | `GET`    | `/`                     | List with pagination                                             |
 | `GET`    | `/{id}`                 | Get summary by ID                                                |
 | `GET`    | `/owner/{ownerId}`      | List resumes for a seeker with pagination                        |
+| `POST`   | `/upload`               | Upload a PDF — LLM extracts owner identity, stores parsed profile |
 | `PUT`    | `/{id}`                 | Update mutable fields (fileName, contentType, pdfBytes, extractedText, profileJson, managerEmail, notificationType) |
 | `DELETE` | `/{id}`                 | Delete resume, its match records, and owner if no resumes remain |
+
+**Upload flow** (`POST /api/resumes/upload`): PDFBox extracts text → OpenAI identifies seeker name/email → seeker is upserted → OpenAI builds a structured `ResumeProfileDTO` (skills, roles, tools, etc.) → all data is persisted to MySQL.
 
 ### Resume Matches — `/api/resume-matches`
 
@@ -71,10 +74,10 @@ Returns a summary view `(id, owner, managerEmail, notificationType)` — full PD
 
 ## Cascade Delete Behaviour
 
-| Delete on       | Also removes                                                       |
-|-----------------|--------------------------------------------------------------------|
-| `Assignment`    | All `ResumeMatch` rows for that assignment                         |
-| `Resume`        | All `ResumeMatch` rows for that resume; `AssignmentSeeker` owner if they have no other resumes |
+| Delete on       | Also removes                                                                                    |
+|-----------------|-------------------------------------------------------------------------------------------------|
+| `Assignment`    | All `ResumeMatch` rows for that assignment; Elasticsearch document deleted after commit         |
+| `Resume`        | All `ResumeMatch` rows for that resume; `AssignmentSeeker` owner if they have no other resumes  |
 
 ---
 
@@ -88,6 +91,9 @@ Mirrors the resume-matcher project:
 | Framework        | Spring Boot 3.4.1             |
 | Persistence      | Spring Data JPA / Hibernate   |
 | Database         | MySQL 8.4                     |
+| Search           | Elasticsearch 8.15 (Java client) |
+| AI               | OpenAI Java SDK 4.12 (gpt-4o) |
+| PDF parsing      | Apache PDFBox 3.0.3           |
 | API Docs         | Springdoc OpenAPI 2.7.0       |
 | Build            | Maven 3.9                     |
 | Code style       | Spotless + Eclipse JDT        |
@@ -128,6 +134,9 @@ DB_USER=resume_user
 DB_PASSWORD=changeme
 DB_NAME=resume_matcher
 DB_ROOT_PASSWORD=rootpassword
+
+ELASTIC_URL=http://elasticsearch:9200
+OPENAI_API_KEY=sk-...
 ```
 
 ### 3. Run with Docker Compose (recommended)
@@ -155,13 +164,14 @@ resume-match-api/
 ├── src/
 │   ├── main/
 │   │   ├── java/se/debageri/api/
-│   │   │   ├── config/        # OpenAPI configuration
+│   │   │   ├── config/        # OpenAPI, Elasticsearch, OpenAI configuration
 │   │   │   ├── controller/    # REST controllers
 │   │   │   ├── dto/           # Response DTOs (e.g. ResumeSummaryDto)
 │   │   │   ├── entity/        # JPA entities (mirrors resume-matcher)
 │   │   │   ├── exception/     # Domain exceptions and global handler
 │   │   │   ├── repository/    # Spring Data JPA repositories
-│   │   │   └── service/       # Business logic
+│   │   │   ├── service/       # Business logic + ElasticJobSearchService + OpenAiService
+│   │   │   └── util/          # StringUtil (PDF extraction), EmailExtractor
 │   │   └── resources/
 │   │       └── application.yml
 │   └── test/

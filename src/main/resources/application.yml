@@ -1,6 +1,11 @@
 server:
   port: 8081
 
+app:
+  elastic:
+    url: "${ELASTIC_URL:http://localhost:9200}"
+    index: "assignments_v1"
+
 spring:
   main:
     banner-mode: "off"

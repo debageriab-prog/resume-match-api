@@ -17,6 +17,11 @@
         <spring-boot.version>3.4.1</spring-boot.version>
         <springdoc.version>2.7.0</springdoc.version>
 
+        <!-- OpenAI / PDF / Elastic -->
+        <openai-java.version>4.12.0</openai-java.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
+        <elasticsearch-java.version>8.15.2</elasticsearch-java.version>
+
         <!-- MySQL -->
         <mysql-connector.version>9.1.0</mysql-connector.version>
 
@@ -77,10 +82,42 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- OpenAI official Java SDK -->
+        <dependency>
+            <groupId>com.openai</groupId>
+            <artifactId>openai-java</artifactId>
+            <version>${openai-java.version}</version>
+        </dependency>
+
+        <!-- PDF parsing -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+
+        <!-- Elasticsearch Java API Client -->
+        <dependency>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+            <version>${elasticsearch-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-client</artifactId>
+            <version>${elasticsearch-java.version}</version>
+        </dependency>
+
         <!-- JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- Apache Commons Lang (StringUtils) -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
 
         <!-- Validation -->
