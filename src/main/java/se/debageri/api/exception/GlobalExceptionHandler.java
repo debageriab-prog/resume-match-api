@@ -14,18 +14,19 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+	@ExceptionHandler({ResourceNotFoundException.class, AssignmentNotFoundException.class,
+			ResumeNotFoundException.class})
+	public ResponseEntity<Map<String, Object>> handleNotFound(RuntimeException ex) {
 		return buildErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
 	}
 
 	@ExceptionHandler(DuplicateResourceException.class)
-	public ResponseEntity<Map<String, Object>> handleDuplicateResourceException(DuplicateResourceException ex) {
+	public ResponseEntity<Map<String, Object>> handleDuplicate(DuplicateResourceException ex) {
 		return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT);
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
+	public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
 		Map<String, String> validationErrors = new HashMap<>();
 		ex.getBindingResult().getAllErrors().forEach(error -> {
 			String fieldName = ((FieldError) error).getField();
@@ -43,7 +44,7 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+	public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
 		return buildErrorResponse("An unexpected error occurred: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 

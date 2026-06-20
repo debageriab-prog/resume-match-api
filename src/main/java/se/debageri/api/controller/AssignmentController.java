@@ -1,7 +1,8 @@
 package se.debageri.api.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,9 +26,15 @@ public class AssignmentController {
 	private final AssignmentService assignmentService;
 
 	@GetMapping
-	@Operation(summary = "Get all assignments")
-	public ResponseEntity<List<Assignment>> getAll() {
-		return ResponseEntity.ok(assignmentService.findAll());
+	@Operation(summary = "Get all assignments with optional filtering and pagination")
+	public ResponseEntity<Page<Assignment>> getAll(
+			@Parameter(description = "Filter by exact jobId") @RequestParam(required = false) Long jobId,
+			@Parameter(description = "Filter by title (partial match)") @RequestParam(required = false) String title,
+			@Parameter(description = "Filter by client (partial match)") @RequestParam(required = false) String client,
+			@Parameter(description = "Filter by location (partial match)") @RequestParam(required = false) String location,
+			@Parameter(description = "Filter by portal (exact match)") @RequestParam(required = false) String portal,
+			@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+		return ResponseEntity.ok(assignmentService.findAll(jobId, title, client, location, portal, pageable));
 	}
 
 	@GetMapping("/{id}")
@@ -56,7 +63,7 @@ public class AssignmentController {
 	}
 
 	@DeleteMapping("/{id}")
-	@Operation(summary = "Delete an assignment")
+	@Operation(summary = "Delete an assignment and its related match records")
 	@ApiResponses({@ApiResponse(responseCode = "204", description = "Assignment deleted"),
 			@ApiResponse(responseCode = "404", description = "Assignment not found")})
 	public ResponseEntity<Void> delete(@Parameter(description = "Assignment ID") @PathVariable Long id) {

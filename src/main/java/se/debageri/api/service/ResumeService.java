@@ -1,36 +1,42 @@
 package se.debageri.api.service;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import se.debageri.api.entity.AssignmentSeeker;
 import se.debageri.api.entity.Resume;
-import se.debageri.api.exception.ResourceNotFoundException;
+import se.debageri.api.exception.ResumeNotFoundException;
+import se.debageri.api.repository.AssignmentSeekerRepository;
+import se.debageri.api.repository.ResumeMatchRepository;
 import se.debageri.api.repository.ResumeRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ResumeService {
 
 	private final ResumeRepository resumeRepository;
+	private final ResumeMatchRepository resumeMatchRepository;
+	private final AssignmentSeekerRepository assignmentSeekerRepository;
 	private final AssignmentSeekerService assignmentSeekerService;
 
-	public List<Resume> findAll() {
-		return resumeRepository.findAll();
+	public Page<Resume> findAll(Pageable pageable) {
+		return resumeRepository.findAll(pageable);
 	}
 
 	public Resume findById(Long id) {
-		return resumeRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Resume", id));
+		return resumeRepository.findById(id).orElseThrow(() -> new ResumeNotFoundException(id));
 	}
 
-	public List<Resume> findByOwnerId(Long ownerId) {
+	public Page<Resume> findByOwnerId(Long ownerId, Pageable pageable) {
 		assignmentSeekerService.findById(ownerId);
-		return resumeRepository.findByOwnerId(ownerId);
+		return resumeRepository.findAll((root, query, cb) -> cb.equal(root.get("owner").get("id"), ownerId), pageable);
 	}
 
 	@Transactional
@@ -54,10 +60,23 @@ public class ResumeService {
 	}
 
 	@Transactional
-	public void delete(Long id) {
-		if (!resumeRepository.existsById(id)) {
-			throw new ResourceNotFoundException("Resume", id);
+	public void delete(long resumeId) {
+		Resume resume = resumeRepository.findById(resumeId).orElseThrow(() -> new ResumeNotFoundException(resumeId));
+
+		Long ownerId = resume.getOwner() != null ? resume.getOwner().getId() : null;
+
+		resumeMatchRepository.deleteByResumeId(resumeId);
+
+		resumeRepository.deleteById(resumeId);
+
+		if (ownerId != null) {
+			long remaining = resumeRepository.countByOwnerId(ownerId);
+			if (remaining == 0) {
+				assignmentSeekerRepository.deleteById(ownerId);
+				log.info("Deleted owner assignmentSeeker id={}", ownerId);
+			}
 		}
-		resumeRepository.deleteById(id);
+
+		log.info("Deleted resume id={}", resumeId);
 	}
 }

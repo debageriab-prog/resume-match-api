@@ -18,4 +18,8 @@ public interface ResumeMatchRepository extends JpaRepository<ResumeMatch, Long> 
 	Optional<ResumeMatch> findByResumeIdAndAssignmentId(Long resumeId, Long assignmentId);
 
 	List<ResumeMatch> findByResumeIdOrderByMatchPercentDesc(Long resumeId);
+
+	void deleteByResumeId(Long resumeId);
+
+	void deleteByAssignmentIdIn(List<Long> assignmentIds);
 }

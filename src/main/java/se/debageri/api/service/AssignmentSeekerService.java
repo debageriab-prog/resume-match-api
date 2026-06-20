@@ -1,7 +1,7 @@
 package se.debageri.api.service;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,8 +19,8 @@ public class AssignmentSeekerService {
 
 	private final AssignmentSeekerRepository assignmentSeekerRepository;
 
-	public List<AssignmentSeeker> findAll() {
-		return assignmentSeekerRepository.findAll();
+	public Page<AssignmentSeeker> findAll(Pageable pageable) {
+		return assignmentSeekerRepository.findAll(pageable);
 	}
 
 	public AssignmentSeeker findById(Long id) {

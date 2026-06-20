@@ -2,34 +2,41 @@ package se.debageri.api.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import se.debageri.api.entity.Assignment;
+import se.debageri.api.exception.AssignmentNotFoundException;
 import se.debageri.api.exception.DuplicateResourceException;
-import se.debageri.api.exception.ResourceNotFoundException;
 import se.debageri.api.repository.AssignmentRepository;
+import se.debageri.api.repository.AssignmentSpecification;
+import se.debageri.api.repository.ResumeMatchRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AssignmentService {
 
 	private final AssignmentRepository assignmentRepository;
+	private final ResumeMatchRepository resumeMatchRepository;
 
-	public List<Assignment> findAll() {
-		return assignmentRepository.findAll();
+	public Page<Assignment> findAll(Long jobId, String title, String client, String location, String portal,
+			Pageable pageable) {
+		Specification<Assignment> spec = Specification.where(AssignmentSpecification.hasJobId(jobId))
+				.and(AssignmentSpecification.titleContains(title)).and(AssignmentSpecification.clientContains(client))
+				.and(AssignmentSpecification.locationContains(location)).and(AssignmentSpecification.hasPortal(portal));
+		return assignmentRepository.findAll(spec, pageable);
 	}
 
 	public Assignment findById(Long id) {
-		return assignmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Assignment", id));
-	}
-
-	public Assignment findByJobId(Long jobId) {
-		return assignmentRepository.findByJobId(jobId)
-				.orElseThrow(() -> new ResourceNotFoundException("Assignment not found with jobId: " + jobId));
+		return assignmentRepository.findById(id).orElseThrow(() -> new AssignmentNotFoundException(id));
 	}
 
 	@Transactional
@@ -64,10 +71,19 @@ public class AssignmentService {
 	}
 
 	@Transactional
-	public void delete(Long id) {
+	public void delete(long id) {
 		if (!assignmentRepository.existsById(id)) {
-			throw new ResourceNotFoundException("Assignment", id);
+			throw new AssignmentNotFoundException(id);
 		}
-		assignmentRepository.deleteById(id);
+
+		List<Long> ids = List.of(id);
+
+		log.debug("Deleting ResumeMatch rows for assignmentId={}", id);
+		resumeMatchRepository.deleteByAssignmentIdIn(ids);
+
+		log.debug("Deleting Assignment row id={}", id);
+		assignmentRepository.deleteByIdIn(ids);
+
+		log.info("Deleted assignment id={}", id);
 	}
 }

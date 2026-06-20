@@ -1,7 +1,8 @@
 package se.debageri.api.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,9 +26,9 @@ public class AssignmentSeekerController {
 	private final AssignmentSeekerService assignmentSeekerService;
 
 	@GetMapping
-	@Operation(summary = "Get all assignment seekers")
-	public ResponseEntity<List<AssignmentSeeker>> getAll() {
-		return ResponseEntity.ok(assignmentSeekerService.findAll());
+	@Operation(summary = "Get all assignment seekers with pagination")
+	public ResponseEntity<Page<AssignmentSeeker>> getAll(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+		return ResponseEntity.ok(assignmentSeekerService.findAll(pageable));
 	}
 
 	@GetMapping("/{id}")

@@ -1,11 +1,12 @@
 package se.debageri.api.controller;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import se.debageri.api.dto.ResumeSummaryDto;
 import se.debageri.api.entity.Resume;
 import se.debageri.api.service.ResumeService;
 
@@ -25,51 +26,49 @@ public class ResumeController {
 	private final ResumeService resumeService;
 
 	@GetMapping
-	@Operation(summary = "Get all resumes")
-	public ResponseEntity<List<Resume>> getAll() {
-		return ResponseEntity.ok(resumeService.findAll());
+	@Operation(summary = "Get all resumes (summary view) with pagination")
+	public ResponseEntity<Page<ResumeSummaryDto>> getAll(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+		return ResponseEntity.ok(resumeService.findAll(pageable).map(this::toSummary));
 	}
 
 	@GetMapping("/{id}")
-	@Operation(summary = "Get resume by ID")
+	@Operation(summary = "Get resume summary by ID")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resume found"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
-	public ResponseEntity<Resume> getById(@Parameter(description = "Resume ID") @PathVariable Long id) {
-		return ResponseEntity.ok(resumeService.findById(id));
+	public ResponseEntity<ResumeSummaryDto> getById(@Parameter(description = "Resume ID") @PathVariable Long id) {
+		return ResponseEntity.ok(toSummary(resumeService.findById(id)));
 	}
 
 	@GetMapping("/owner/{ownerId}")
-	@Operation(summary = "Get all resumes for a seeker")
+	@Operation(summary = "Get all resumes (summary view) for a seeker with pagination")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resumes retrieved"),
 			@ApiResponse(responseCode = "404", description = "Seeker not found")})
-	public ResponseEntity<List<Resume>> getByOwnerId(@Parameter(description = "Seeker ID") @PathVariable Long ownerId) {
-		return ResponseEntity.ok(resumeService.findByOwnerId(ownerId));
-	}
-
-	@PostMapping("/owner/{ownerId}")
-	@Operation(summary = "Create a resume for a seeker")
-	@ApiResponses({@ApiResponse(responseCode = "201", description = "Resume created"),
-			@ApiResponse(responseCode = "404", description = "Seeker not found")})
-	public ResponseEntity<Resume> create(@Parameter(description = "Seeker ID") @PathVariable Long ownerId,
-			@RequestBody Resume resume) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(resumeService.save(ownerId, resume));
+	public ResponseEntity<Page<ResumeSummaryDto>> getByOwnerId(
+			@Parameter(description = "Seeker ID") @PathVariable Long ownerId,
+			@PageableDefault(size = 20, sort = "id") Pageable pageable) {
+		return ResponseEntity.ok(resumeService.findByOwnerId(ownerId, pageable).map(this::toSummary));
 	}
 
 	@PutMapping("/{id}")
-	@Operation(summary = "Update a resume")
+	@Operation(summary = "Update a resume (fileName, contentType, pdfBytes, extractedText, profileJson, managerEmail, notificationType)")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resume updated"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
-	public ResponseEntity<Resume> update(@Parameter(description = "Resume ID") @PathVariable Long id,
+	public ResponseEntity<ResumeSummaryDto> update(@Parameter(description = "Resume ID") @PathVariable Long id,
 			@RequestBody Resume resume) {
-		return ResponseEntity.ok(resumeService.update(id, resume));
+		return ResponseEntity.ok(toSummary(resumeService.update(id, resume)));
 	}
 
 	@DeleteMapping("/{id}")
-	@Operation(summary = "Delete a resume")
+	@Operation(summary = "Delete a resume, its match records, and the owner if they have no other resumes")
 	@ApiResponses({@ApiResponse(responseCode = "204", description = "Resume deleted"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
 	public ResponseEntity<Void> delete(@Parameter(description = "Resume ID") @PathVariable Long id) {
 		resumeService.delete(id);
 		return ResponseEntity.noContent().build();
+	}
+
+	private ResumeSummaryDto toSummary(Resume resume) {
+		return new ResumeSummaryDto(resume.getId(), resume.getOwner(), resume.getManagerEmail(),
+				resume.getNotificationType());
 	}
 }

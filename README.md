@@ -11,7 +11,7 @@ Intended to serve as the backend for a front-end application — no security lay
 | Entity             | Table               | Description                                         |
 |--------------------|---------------------|-----------------------------------------------------|
 | `Assignment`       | `assignment`        | A job/assignment posting                            |
-| `AssignmentIndex`  | `assignment_index`  | Tracks which assignments have been indexed          |
+| `AssignmentIndex`  | `assignment_index`  | Tracks which assignments have been indexed (entity only, no API) |
 | `AssignmentSeeker` | `assignment_seeker` | A job seeker (user)                                 |
 | `Resume`           | `resume`            | Resume belonging to an `AssignmentSeeker`           |
 | `ResumeMatch`      | `resume_match`      | Match result between a `Resume` and an `Assignment` |
@@ -20,19 +20,61 @@ Intended to serve as the backend for a front-end application — no security lay
 
 ## API Endpoints
 
-| Resource            | Base Path                  |
-|---------------------|----------------------------|
-| Assignments         | `/api/assignments`         |
-| Assignment Indexes  | `/api/assignment-indexes`  |
-| Assignment Seekers  | `/api/assignment-seekers`  |
-| Resumes             | `/api/resumes`             |
-| Resume Matches      | `/api/resume-matches`      |
+### Assignments — `/api/assignments`
 
-Each resource supports `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}`.
-Sub-resources are available via e.g. `/api/resumes/owner/{ownerId}` and `/api/resume-matches/resume/{resumeId}`.
+| Method   | Path                  | Description                                         |
+|----------|-----------------------|-----------------------------------------------------|
+| `GET`    | `/`                   | List with pagination and optional filters (jobId, title, client, location, portal) |
+| `GET`    | `/{id}`               | Get by ID                                           |
+| `POST`   | `/`                   | Create                                              |
+| `PUT`    | `/{id}`               | Update                                              |
+| `DELETE` | `/{id}`               | Delete (cascades to ResumeMatch rows)               |
+
+### Assignment Seekers — `/api/assignment-seekers`
+
+| Method   | Path    | Description                |
+|----------|---------|----------------------------|
+| `GET`    | `/`     | List with pagination       |
+| `GET`    | `/{id}` | Get by ID                  |
+| `POST`   | `/`     | Create                     |
+| `PUT`    | `/{id}` | Update                     |
+| `DELETE` | `/{id}` | Delete                     |
+
+### Resumes — `/api/resumes`
+
+Returns a summary view `(id, owner, managerEmail, notificationType)` — full PDF bytes and text are not exposed in list/detail responses.
+
+| Method   | Path                    | Description                                                      |
+|----------|-------------------------|------------------------------------------------------------------|
+| `GET`    | `/`                     | List with pagination                                             |
+| `GET`    | `/{id}`                 | Get summary by ID                                                |
+| `GET`    | `/owner/{ownerId}`      | List resumes for a seeker with pagination                        |
+| `PUT`    | `/{id}`                 | Update mutable fields (fileName, contentType, pdfBytes, extractedText, profileJson, managerEmail, notificationType) |
+| `DELETE` | `/{id}`                 | Delete resume, its match records, and owner if no resumes remain |
+
+### Resume Matches — `/api/resume-matches`
+
+| Method   | Path                          | Description                               |
+|----------|-------------------------------|-------------------------------------------|
+| `GET`    | `/`                           | List all matches                          |
+| `GET`    | `/{id}`                       | Get by ID                                 |
+| `GET`    | `/resume/{resumeId}`          | Matches for a resume, sorted by score desc|
+| `GET`    | `/assignment/{assignmentId}`  | Matches for an assignment                 |
+| `POST`   | `/`                           | Create                                    |
+| `PUT`    | `/{id}`                       | Update score, reasons, decision           |
+| `DELETE` | `/{id}`                       | Delete                                    |
 
 **Swagger UI** → `http://localhost:8080/swagger-ui.html`
 **OpenAPI spec** → `http://localhost:8080/api-docs`
+
+---
+
+## Cascade Delete Behaviour
+
+| Delete on       | Also removes                                                       |
+|-----------------|--------------------------------------------------------------------|
+| `Assignment`    | All `ResumeMatch` rows for that assignment                         |
+| `Resume`        | All `ResumeMatch` rows for that resume; `AssignmentSeeker` owner if they have no other resumes |
 
 ---
 
@@ -115,8 +157,9 @@ resume-match-api/
 │   │   ├── java/se/debageri/api/
 │   │   │   ├── config/        # OpenAPI configuration
 │   │   │   ├── controller/    # REST controllers
+│   │   │   ├── dto/           # Response DTOs (e.g. ResumeSummaryDto)
 │   │   │   ├── entity/        # JPA entities (mirrors resume-matcher)
-│   │   │   ├── exception/     # Exception handling
+│   │   │   ├── exception/     # Domain exceptions and global handler
 │   │   │   ├── repository/    # Spring Data JPA repositories
 │   │   │   └── service/       # Business logic
 │   │   └── resources/
