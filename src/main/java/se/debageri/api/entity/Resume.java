@@ -17,7 +17,7 @@ public class Resume {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(optional = false, fetch = FetchType.LAZY)
+	@ManyToOne(optional = false, fetch = FetchType.EAGER)
 	@JoinColumn(name = "owner_id", nullable = false)
 	private AssignmentSeeker owner;
 
