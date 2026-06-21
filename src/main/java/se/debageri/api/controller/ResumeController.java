@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import se.debageri.api.dto.ResumeSummaryDto;
+import se.debageri.api.dto.ResumeUpdateRequest;
 import se.debageri.api.entity.NotificationType;
 import se.debageri.api.entity.Resume;
 import se.debageri.api.service.ResumeService;
@@ -77,8 +78,8 @@ public class ResumeController {
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resume updated"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
 	public ResponseEntity<ResumeSummaryDto> update(@Parameter(description = "Resume ID") @PathVariable("id") Long id,
-			@RequestBody Resume resume) {
-		return ResponseEntity.ok(toSummary(resumeService.update(id, resume)));
+			@RequestBody ResumeUpdateRequest request) {
+		return ResponseEntity.ok(toSummary(resumeService.update(id, request)));
 	}
 
 	@DeleteMapping("/{id}")

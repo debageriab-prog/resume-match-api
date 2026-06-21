@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import se.debageri.api.dto.AssignmentSeekerInfoDTO;
 import se.debageri.api.dto.ResumeProfileDTO;
+import se.debageri.api.dto.ResumeUpdateRequest;
 import se.debageri.api.entity.AssignmentSeeker;
 import se.debageri.api.entity.NotificationType;
 import se.debageri.api.entity.Resume;
@@ -56,10 +57,10 @@ public class ResumeService {
 	}
 
 	@Transactional
-	public Resume update(Long id, Resume updated) {
+	public Resume update(Long id, ResumeUpdateRequest request) {
 		Resume existing = findById(id);
-		existing.setManagerEmail(updated.getManagerEmail());
-		existing.setNotificationType(updated.getNotificationType());
+		existing.setManagerEmail(request.managerEmail());
+		existing.setNotificationType(request.notificationType());
 		return resumeRepository.save(existing);
 	}
 
