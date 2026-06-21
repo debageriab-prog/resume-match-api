@@ -114,6 +114,12 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- RabbitMQ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- Apache Commons Lang (StringUtils) -->
         <dependency>
             <groupId>org.apache.commons</groupId>

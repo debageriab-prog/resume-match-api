@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import se.debageri.api.entity.Assignment;
 import se.debageri.api.exception.AssignmentNotFoundException;
 import se.debageri.api.exception.DuplicateResourceException;
+import se.debageri.api.rabbit.AssignmentEventPublisher;
 import se.debageri.api.repository.AssignmentIndexRepository;
 import se.debageri.api.repository.AssignmentRepository;
 import se.debageri.api.repository.AssignmentSpecification;
@@ -31,6 +32,7 @@ public class AssignmentService {
 	private final ResumeMatchRepository resumeMatchRepository;
 	private final AssignmentIndexRepository assignmentIndexRepository;
 	private final ElasticJobSearchService elasticJobSearchService;
+	private final AssignmentEventPublisher assignmentEventPublisher;
 
 	public Page<Assignment> findAll(Long jobId, String title, String client, String location, String portal,
 			Pageable pageable) {
@@ -49,7 +51,15 @@ public class AssignmentService {
 		if (assignment.getId() == null && assignmentRepository.existsByJobId(assignment.getJobId())) {
 			throw new DuplicateResourceException("Assignment already exists with jobId: " + assignment.getJobId());
 		}
-		return assignmentRepository.save(assignment);
+		Assignment saved = assignmentRepository.save(assignment);
+		long savedId = saved.getId();
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				assignmentEventPublisher.publishAssignmentUpserted(savedId);
+			}
+		});
+		return saved;
 	}
 
 	@Transactional

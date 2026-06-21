@@ -58,11 +58,6 @@ public class ResumeService {
 	@Transactional
 	public Resume update(Long id, Resume updated) {
 		Resume existing = findById(id);
-		existing.setFileName(updated.getFileName());
-		existing.setContentType(updated.getContentType());
-		existing.setPdfBytes(updated.getPdfBytes());
-		existing.setExtractedText(updated.getExtractedText());
-		existing.setProfileJson(updated.getProfileJson());
 		existing.setManagerEmail(updated.getManagerEmail());
 		existing.setNotificationType(updated.getNotificationType());
 		return resumeRepository.save(existing);

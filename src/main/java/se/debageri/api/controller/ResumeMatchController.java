@@ -1,8 +1,9 @@
 package se.debageri.api.controller;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,9 +26,10 @@ public class ResumeMatchController {
 	private final ResumeMatchService resumeMatchService;
 
 	@GetMapping
-	@Operation(summary = "Get all resume matches")
-	public ResponseEntity<List<ResumeMatch>> getAll() {
-		return ResponseEntity.ok(resumeMatchService.findAll());
+	@Operation(summary = "Get all resume matches with pagination")
+	public ResponseEntity<Page<ResumeMatch>> getAll(
+			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+		return ResponseEntity.ok(resumeMatchService.findAll(pageable));
 	}
 
 	@GetMapping("/{id}")
@@ -39,34 +41,19 @@ public class ResumeMatchController {
 	}
 
 	@GetMapping("/resume/{resumeId}")
-	@Operation(summary = "Get all matches for a resume, sorted by match percent descending")
-	public ResponseEntity<List<ResumeMatch>> getByResumeId(
-			@Parameter(description = "Resume ID") @PathVariable("resumeId") Long resumeId) {
-		return ResponseEntity.ok(resumeMatchService.findByResumeId(resumeId));
+	@Operation(summary = "Get all matches for a resume with pagination, sorted by match percent descending")
+	public ResponseEntity<Page<ResumeMatch>> getByResumeId(
+			@Parameter(description = "Resume ID") @PathVariable("resumeId") Long resumeId,
+			@ParameterObject @PageableDefault(size = 10, sort = "matchPercent", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+		return ResponseEntity.ok(resumeMatchService.findByResumeId(resumeId, pageable));
 	}
 
 	@GetMapping("/assignment/{assignmentId}")
 	@Operation(summary = "Get all matches for an assignment")
-	public ResponseEntity<List<ResumeMatch>> getByAssignmentId(
-			@Parameter(description = "Assignment ID") @PathVariable("assignmentId") Long assignmentId) {
-		return ResponseEntity.ok(resumeMatchService.findByAssignmentId(assignmentId));
-	}
-
-	@PostMapping
-	@Operation(summary = "Create a resume match record")
-	@ApiResponses({@ApiResponse(responseCode = "201", description = "Match created"),
-			@ApiResponse(responseCode = "409", description = "Match already exists for this resume/assignment pair")})
-	public ResponseEntity<ResumeMatch> create(@RequestBody ResumeMatch resumeMatch) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(resumeMatchService.save(resumeMatch));
-	}
-
-	@PutMapping("/{id}")
-	@Operation(summary = "Update a resume match record")
-	@ApiResponses({@ApiResponse(responseCode = "200", description = "Match updated"),
-			@ApiResponse(responseCode = "404", description = "Match not found")})
-	public ResponseEntity<ResumeMatch> update(@Parameter(description = "Match ID") @PathVariable("id") Long id,
-			@RequestBody ResumeMatch resumeMatch) {
-		return ResponseEntity.ok(resumeMatchService.update(id, resumeMatch));
+	public ResponseEntity<Page<ResumeMatch>> getByAssignmentId(
+			@Parameter(description = "Assignment ID") @PathVariable("assignmentId") Long assignmentId,
+			@ParameterObject @PageableDefault(size = 10, sort = "matchPercent", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+		return ResponseEntity.ok(resumeMatchService.findByAssignmentId(assignmentId, pageable));
 	}
 
 	@DeleteMapping("/{id}")

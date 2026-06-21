@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,6 +32,7 @@ public class ResumeMatch {
 	@Column(name = "match_percent", nullable = false)
 	private int matchPercent;
 
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	@Column(name = "matched_at", nullable = false, updatable = false)
 	private final Instant matchedAt = Instant.now();
 

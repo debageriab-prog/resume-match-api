@@ -73,7 +73,7 @@ public class ResumeController {
 	}
 
 	@PutMapping("/{id}")
-	@Operation(summary = "Update a resume (fileName, contentType, pdfBytes, extractedText, profileJson, managerEmail, notificationType)")
+	@Operation(summary = "Update a resume (managerEmail and notificationType only)")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resume updated"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
 	public ResponseEntity<ResumeSummaryDto> update(@Parameter(description = "Resume ID") @PathVariable("id") Long id,

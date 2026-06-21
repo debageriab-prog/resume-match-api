@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import jakarta.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,6 +28,7 @@ public class AssignmentSeeker {
 	@Column(name = "email", nullable = false, unique = true, length = 255)
 	private String email;
 
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 }

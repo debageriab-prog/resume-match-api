@@ -24,6 +24,13 @@ spring:
         dialect: "org.hibernate.dialect.MySQLDialect"
         format_sql: true
 
+  rabbitmq:
+    host: "${RABBIT_HOST:localhost}"
+    port: "${RABBIT_PORT:5672}"
+    username: "${RABBIT_USER:app_user}"
+    password: "${RABBIT_PASSWORD}"
+    virtual-host: /
+
   jackson:
     serialization:
       write-dates-as-timestamps: false
