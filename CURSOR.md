@@ -158,6 +158,66 @@ docker compose up --build    # full stack with MySQL
 
 ---
 
+## Testing
+
+### Test structure
+
+```
+src/test/
+├── java/se/debageri/api/
+│   ├── ResumeMatchApiApplicationTests.java         # context smoke test
+│   └── controller/
+│       ├── AssignmentControllerTest.java           # 13 endpoint tests
+│       ├── AssignmentSeekerControllerTest.java     # 11 endpoint tests
+│       ├── ResumeControllerTest.java               # 13 endpoint tests
+│       └── ResumeMatchControllerTest.java          # 10 endpoint tests
+└── resources/
+    └── application-test.yml                       # H2 + exclusions
+```
+
+### Controller test conventions
+
+All controller tests use `@SpringBootTest(webEnvironment = RANDOM_PORT)` with `TestRestTemplate`. The test profile:
+
+- Replaces MySQL with **H2 in-memory** (`MODE=MySQL`, `ddl-auto: create-drop`)
+- Excludes `RabbitAutoConfiguration` — no RabbitMQ needed
+- Stubs `AssignmentEventPublisher` and `OpenAIClient` via `@MockBean` so RabbitMQ / OpenAI calls never happen
+- Tests that touch assignment delete additionally stub `ElasticJobSearchService` to prevent real Elasticsearch calls
+- Tests for resume upload (`POST /api/resumes/upload`) are intentionally omitted — they require live LLM calls; test with a real `OPENAI_API_KEY` manually
+
+Each test class cleans its relevant tables in `@BeforeEach` to guarantee isolation.
+
+### Seeding test data
+
+Create entities directly via injected repositories; respect FK ordering on cleanup:
+```
+resume_match → resume → assignment_seeker
+assignment_index → assignment
+```
+
+### Running tests
+
+```bash
+mvn test                     # all tests (no external services needed)
+```
+
+---
+
+## CI/CD
+
+### GitHub Actions (`.github/workflows/ci.yml`)
+
+Two jobs run on every push and pull request to `main`:
+
+| Job | Command | What it validates |
+|---|---|---|
+| `build` | `mvn package -DskipTests` | Compiles, packages the JAR |
+| `test` | `mvn test` | All 48 tests against H2 in-memory DB |
+
+The `test` job depends on `build` (via `needs: build`). Test results are uploaded as an artifact (`test-results/surefire-reports`).
+
+---
+
 ## Conventions
 
 - All services are `@Transactional(readOnly = true)` by default; write methods opt in with `@Transactional`.
