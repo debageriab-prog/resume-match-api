@@ -2,6 +2,8 @@ package se.debageri.api.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -270,9 +272,13 @@ class AssignmentControllerTest {
 
 	@Test
 	void shouldReturnStatistics_withCountsReflectingSeededData() {
-		// Given
-		assignmentRepository.save(buildAssignment(11001L, "Dev A", "CorpA", "p1"));
-		assignmentRepository.save(buildAssignment(11002L, "Dev B", "CorpB", "p2"));
+		// Given — assignments published today count toward all period buckets
+		Assignment a1 = buildAssignment(11001L, "Dev A", "CorpA", "p1");
+		a1.setPublishedOn(LocalDate.now());
+		Assignment a2 = buildAssignment(11002L, "Dev B", "CorpB", "p2");
+		a2.setPublishedOn(LocalDate.now());
+		assignmentRepository.save(a1);
+		assignmentRepository.save(a2);
 
 		// When
 		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/statistics", JsonNode.class);

@@ -1,8 +1,6 @@
 package se.debageri.api.service;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -39,14 +37,13 @@ public class AssignmentService {
 	private final AssignmentEventPublisher assignmentEventPublisher;
 
 	public StatisticsResponse getStatistics() {
-		Instant now = Instant.now();
-		Instant startOfToday = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
-		Instant startOfLastWeek = now.minusSeconds(7 * 24 * 60 * 60);
-		Instant startOfLastMonth = now.minusSeconds(30L * 24 * 60 * 60);
+		LocalDate today = LocalDate.now();
+		LocalDate startOfLastWeek = today.minusDays(7);
+		LocalDate startOfLastMonth = today.minusDays(30);
 		return new StatisticsResponse(assignmentRepository.count(),
-				assignmentRepository.countByCreatedAtBetween(startOfToday, now),
-				assignmentRepository.countByCreatedAtBetween(startOfLastWeek, now),
-				assignmentRepository.countByCreatedAtBetween(startOfLastMonth, now));
+				assignmentRepository.countByPublishedOnBetween(today, today),
+				assignmentRepository.countByPublishedOnBetween(startOfLastWeek, today),
+				assignmentRepository.countByPublishedOnBetween(startOfLastMonth, today));
 	}
 
 	public Page<Assignment> findAll(Long jobId, String title, String client, String location, String portal,

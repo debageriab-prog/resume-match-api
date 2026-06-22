@@ -1,12 +1,9 @@
 package se.debageri.api.entity;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -72,8 +69,4 @@ public class Assignment {
 	private String url;
 
 	private String portal;
-
-	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private Instant createdAt = Instant.now();
 }
