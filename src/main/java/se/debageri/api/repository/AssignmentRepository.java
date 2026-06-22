@@ -1,5 +1,6 @@
 package se.debageri.api.repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,4 +18,6 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long>, J
 	boolean existsByJobId(Long jobId);
 
 	void deleteByIdIn(List<Long> ids);
+
+	long countByCreatedAtBetween(Instant start, Instant end);
 }

@@ -252,4 +252,36 @@ class AssignmentControllerTest {
 		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
 		assertThat(response.getBody().get("content").get(0).get("jobId").asLong()).isEqualTo(10001L);
 	}
+
+	@Test
+	void shouldReturnStatistics_whenNoAssignmentsExist() {
+		// Given — empty database
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldReturnStatistics_withCountsReflectingSeededData() {
+		// Given
+		assignmentRepository.save(buildAssignment(11001L, "Dev A", "CorpA", "p1"));
+		assignmentRepository.save(buildAssignment(11002L, "Dev B", "CorpB", "p2"));
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+	}
 }

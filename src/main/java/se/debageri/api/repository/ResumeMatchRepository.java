@@ -1,5 +1,6 @@
 package se.debageri.api.repository;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -23,4 +24,6 @@ public interface ResumeMatchRepository extends JpaRepository<ResumeMatch, Long> 
 	void deleteByResumeIdIn(List<Long> resumeIds);
 
 	void deleteByAssignmentIdIn(List<Long> assignmentIds);
+
+	long countByMatchedAtBetween(Instant start, Instant end);
 }

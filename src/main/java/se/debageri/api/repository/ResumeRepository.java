@@ -1,5 +1,6 @@
 package se.debageri.api.repository;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -18,4 +19,6 @@ public interface ResumeRepository extends JpaRepository<Resume, Long>, JpaSpecif
 	Page<Resume> findAll(Pageable pageable);
 
 	long countByOwnerId(Long ownerId);
+
+	long countByCreatedAtBetween(Instant start, Instant end);
 }

@@ -1,5 +1,8 @@
 package se.debageri.api.service;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -10,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.Assignment;
 import se.debageri.api.exception.AssignmentNotFoundException;
 import se.debageri.api.exception.DuplicateResourceException;
@@ -33,6 +37,17 @@ public class AssignmentService {
 	private final AssignmentIndexRepository assignmentIndexRepository;
 	private final ElasticJobSearchService elasticJobSearchService;
 	private final AssignmentEventPublisher assignmentEventPublisher;
+
+	public StatisticsResponse getStatistics() {
+		Instant now = Instant.now();
+		Instant startOfToday = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
+		Instant startOfLastWeek = now.minusSeconds(7 * 24 * 60 * 60);
+		Instant startOfLastMonth = now.minusSeconds(30L * 24 * 60 * 60);
+		return new StatisticsResponse(assignmentRepository.count(),
+				assignmentRepository.countByCreatedAtBetween(startOfToday, now),
+				assignmentRepository.countByCreatedAtBetween(startOfLastWeek, now),
+				assignmentRepository.countByCreatedAtBetween(startOfLastMonth, now));
+	}
 
 	public Page<Assignment> findAll(Long jobId, String title, String client, String location, String portal,
 			Pageable pageable) {

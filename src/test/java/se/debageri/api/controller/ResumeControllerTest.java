@@ -273,4 +273,37 @@ class ResumeControllerTest {
 		assertThat(response.getBody().get("managerEmail").asText()).isEqualTo("boss@company.com");
 		assertThat(response.getBody().get("notificationType").asText()).isEqualTo("Manager");
 	}
+
+	@Test
+	void shouldReturnStatistics_whenNoResumesExist() {
+		// Given — empty database
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldReturnStatistics_withCountsReflectingSeededData() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("stats.test@example.com");
+		createResume(seeker, NotificationType.User);
+		createResume(seeker, NotificationType.User);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+	}
 }

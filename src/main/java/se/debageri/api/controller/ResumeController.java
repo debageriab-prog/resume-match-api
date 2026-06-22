@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import se.debageri.api.dto.ResumeSummaryDto;
 import se.debageri.api.dto.ResumeUpdateRequest;
+import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.NotificationType;
 import se.debageri.api.entity.Resume;
 import se.debageri.api.service.ResumeService;
@@ -36,6 +37,12 @@ import lombok.RequiredArgsConstructor;
 public class ResumeController {
 
 	private final ResumeService resumeService;
+
+	@GetMapping("/statistics")
+	@Operation(summary = "Get resume statistics (total, today, last week, last month)")
+	public ResponseEntity<StatisticsResponse> getStatistics() {
+		return ResponseEntity.ok(resumeService.getStatistics());
+	}
 
 	@GetMapping
 	@Operation(summary = "Get all resumes (summary view) with pagination")
