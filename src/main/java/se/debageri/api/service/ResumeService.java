@@ -5,7 +5,11 @@ import static se.debageri.api.util.StringUtil.isBlank;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import se.debageri.api.dto.AssignmentSeekerInfoDTO;
 import se.debageri.api.dto.ResumeProfileDTO;
+import se.debageri.api.dto.ResumeTopMatchedDto;
 import se.debageri.api.dto.ResumeUpdateRequest;
 import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.AssignmentSeeker;
@@ -71,6 +76,34 @@ public class ResumeService {
 	public Page<Resume> findByOwnerId(Long ownerId, Pageable pageable) {
 		assignmentSeekerService.findById(ownerId);
 		return resumeRepository.findAll((root, query, cb) -> cb.equal(root.get("owner").get("id"), ownerId), pageable);
+	}
+
+	public List<ResumeTopMatchedDto> getTopMatched() {
+		Map<Long, Long> matchCounts = resumeMatchRepository.findResumeMatchCounts()
+				.stream()
+				.collect(Collectors.toMap(
+						ResumeMatchRepository.ResumeMatchCountRow::getResumeId,
+						ResumeMatchRepository.ResumeMatchCountRow::getMatchCount));
+
+		if (matchCounts.isEmpty()) {
+			return List.of();
+		}
+
+		return resumeRepository.findAllById(matchCounts.keySet())
+				.stream()
+				.sorted(Comparator.comparing(Resume::getCreatedAt,
+						Comparator.nullsLast(Comparator.reverseOrder())))
+				.limit(5)
+				.map(r -> {
+					AssignmentSeeker owner = r.getOwner();
+					String ownerName = owner != null
+							? (owner.getFirstName() + " " + owner.getLastName()).trim()
+							: null;
+					return new ResumeTopMatchedDto(
+							r.getId(), r.getFileName(), ownerName, r.getCreatedAt(),
+							matchCounts.get(r.getId()));
+				})
+				.collect(Collectors.toList());
 	}
 
 	@Transactional

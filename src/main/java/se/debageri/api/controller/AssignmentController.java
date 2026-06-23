@@ -1,5 +1,7 @@
 package se.debageri.api.controller;
 
+import java.util.List;
+
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import se.debageri.api.dto.AssignmentTopMatchedDto;
 import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.Assignment;
 import se.debageri.api.service.AssignmentService;
@@ -31,6 +34,12 @@ public class AssignmentController {
 	@Operation(summary = "Get assignment statistics (total, today, last week, last month)")
 	public ResponseEntity<StatisticsResponse> getStatistics() {
 		return ResponseEntity.ok(assignmentService.getStatistics());
+	}
+
+	@GetMapping("/topmatched")
+	@Operation(summary = "Get top 5 most recently published assignments that have at least one positive match (decision: maybe, yes, strong_yes)")
+	public ResponseEntity<List<AssignmentTopMatchedDto>> getTopMatched() {
+		return ResponseEntity.ok(assignmentService.getTopMatched());
 	}
 
 	@GetMapping

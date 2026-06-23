@@ -2,6 +2,8 @@ package se.debageri.api.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -276,5 +278,117 @@ class ResumeMatchControllerTest {
 		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
 		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
 		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+	}
+
+	@Test
+	void topMatched_shouldReturnEmptyList_whenNoMatchesExist() {
+		// Given — no matches
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(0);
+	}
+
+	@Test
+	void topMatched_shouldExcludeMatchesWithDecisionNo() {
+		// Given — one match with "yes", one with "no"
+		ResumeMatch yesMatch = buildMatch(savedResume.getId(), savedAssignment.getId(), 85, 0.85);
+		yesMatch.setDecision("yes");
+		yesMatch.setJudgedAt(Instant.now());
+		resumeMatchRepository.save(yesMatch);
+
+		ResumeMatch noMatch = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 30, 0.3);
+		noMatch.setDecision("no");
+		noMatch.setJudgedAt(Instant.now());
+		resumeMatchRepository.save(noMatch);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(1);
+		assertThat(response.getBody().get(0).get("matchPercent").asInt()).isEqualTo(85);
+	}
+
+	@Test
+	void topMatched_shouldReturnExpectedFields() {
+		// Given
+		ResumeMatch match = buildMatch(savedResume.getId(), savedAssignment.getId(), 90, 0.9);
+		match.setDecision("strong_yes");
+		match.setJudgedAt(Instant.now());
+		resumeMatchRepository.save(match);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		JsonNode item = response.getBody().get(0);
+		assertThat(item.get("resumeFileName").asText()).isEqualTo("match-test.pdf");
+		assertThat(item.get("matchPercent").asInt()).isEqualTo(90);
+		assertThat(item.get("judgedAt").isNull()).isFalse();
+		assertThat(item.get("assignmentSeeker")).isNotNull();
+		assertThat(item.get("assignmentSeeker").get("firstName").asText()).isEqualTo("Test");
+	}
+
+	@Test
+	void topMatched_shouldExcludeMatchesWithNullDecision() {
+		// Given — match with null decision
+		ResumeMatch nullDecision = buildMatch(savedResume.getId(), savedAssignment.getId(), 75, 0.75);
+		// decision left null
+		resumeMatchRepository.save(nullDecision);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(0);
+	}
+
+	@Test
+	void topMatched_shouldIncludeAllPositiveDecisionTypes() {
+		// Given — three matches with maybe, yes, strong_yes
+		long assignmentOffset = 0;
+		for (String decision : new String[]{"maybe", "yes", "strong_yes"}) {
+			ResumeMatch m = buildMatch(savedResume.getId(), savedAssignment.getId() + assignmentOffset++, 70, 0.7);
+			m.setDecision(decision);
+			m.setJudgedAt(Instant.now());
+			resumeMatchRepository.save(m);
+		}
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(3);
+	}
+
+	@Test
+	void topMatched_shouldReturnAtMostFive() {
+		// Given — 7 matches all with "yes"
+		for (int i = 0; i < 7; i++) {
+			ResumeMatch m = buildMatch(savedResume.getId(), savedAssignment.getId() + i, 60 + i, 0.6 + i * 0.01);
+			m.setDecision("yes");
+			m.setJudgedAt(Instant.now().minusSeconds(i));
+			resumeMatchRepository.save(m);
+		}
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(5);
 	}
 }

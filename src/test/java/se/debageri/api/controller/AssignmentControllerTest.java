@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.openai.client.OpenAIClient;
 
 import se.debageri.api.entity.Assignment;
+import se.debageri.api.entity.ResumeMatch;
 import se.debageri.api.rabbit.AssignmentEventPublisher;
 import se.debageri.api.repository.AssignmentIndexRepository;
 import se.debageri.api.repository.AssignmentRepository;
@@ -289,5 +290,136 @@ class AssignmentControllerTest {
 		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
 		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
 		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+	}
+
+	@Test
+	void shouldReturnEmptyList_whenNoMatchedAssignmentsExist() {
+		// Given — assignments exist but no matches
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldReturnOnlyAssignmentsWithPositiveDecisionMatches() {
+		// Given
+		Assignment matched = buildAssignment(20001L, "Java Dev", "CorpA", "p1");
+		matched.setPublishedOn(LocalDate.now());
+		matched = assignmentRepository.save(matched);
+
+		Assignment noMatches = buildAssignment(20002L, "Python Dev", "CorpB", "p2");
+		noMatches.setPublishedOn(LocalDate.now());
+		noMatches = assignmentRepository.save(noMatches);
+
+		// A match with decision "yes"
+		ResumeMatch yesMatch = new ResumeMatch();
+		yesMatch.setResumeId(1L);
+		yesMatch.setAssignmentId(matched.getId());
+		yesMatch.setMatchPercent(80);
+		yesMatch.setScore(0.8);
+		yesMatch.setDecision("yes");
+		resumeMatchRepository.save(yesMatch);
+
+		// A match with decision "no" (should be excluded)
+		ResumeMatch noMatch = new ResumeMatch();
+		noMatch.setResumeId(2L);
+		noMatch.setAssignmentId(noMatches.getId());
+		noMatch.setMatchPercent(30);
+		noMatch.setScore(0.3);
+		noMatch.setDecision("no");
+		resumeMatchRepository.save(noMatch);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(1);
+		assertThat(response.getBody().get(0).get("id").asLong()).isEqualTo(matched.getId());
+		assertThat(response.getBody().get(0).get("matchCount").asLong()).isEqualTo(1);
+	}
+
+	@Test
+	void shouldExcludeAssignmentsWithNullDecisionMatches() {
+		// Given
+		Assignment assignment = buildAssignment(20010L, "Dev", "Corp", "p1");
+		assignment.setPublishedOn(LocalDate.now());
+		assignment = assignmentRepository.save(assignment);
+
+		// Match with null decision (no judge decision yet)
+		ResumeMatch nullDecision = new ResumeMatch();
+		nullDecision.setResumeId(1L);
+		nullDecision.setAssignmentId(assignment.getId());
+		nullDecision.setMatchPercent(70);
+		nullDecision.setScore(0.7);
+		// decision remains null
+		resumeMatchRepository.save(nullDecision);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldCountAllPositiveDecisionsPerAssignment() {
+		// Given — assignment with multiple positive decision matches
+		Assignment assignment = buildAssignment(20020L, "Full Stack Dev", "TechCorp", "p1");
+		assignment.setPublishedOn(LocalDate.now());
+		assignment = assignmentRepository.save(assignment);
+
+		for (String decision : new String[]{"yes", "maybe", "strong_yes"}) {
+			ResumeMatch m = new ResumeMatch();
+			m.setResumeId((long) decision.hashCode());
+			m.setAssignmentId(assignment.getId());
+			m.setMatchPercent(75);
+			m.setScore(0.75);
+			m.setDecision(decision);
+			resumeMatchRepository.save(m);
+		}
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(1);
+		assertThat(response.getBody().get(0).get("matchCount").asLong()).isEqualTo(3);
+	}
+
+	@Test
+	void shouldReturnAtMostFiveAssignments() {
+		// Given — 7 assignments each with a positive decision match
+		for (int i = 0; i < 7; i++) {
+			Assignment a = buildAssignment(21000L + i, "Role " + i, "Corp", "p1");
+			a.setPublishedOn(LocalDate.now().minusDays(i));
+			a = assignmentRepository.save(a);
+
+			ResumeMatch m = new ResumeMatch();
+			m.setResumeId((long) i + 1);
+			m.setAssignmentId(a.getId());
+			m.setMatchPercent(70);
+			m.setScore(0.7);
+			m.setDecision("yes");
+			resumeMatchRepository.save(m);
+		}
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(5);
 	}
 }
