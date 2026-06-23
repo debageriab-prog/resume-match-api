@@ -1,5 +1,7 @@
 package se.debageri.api.controller;
 
+import java.util.List;
+
 import jakarta.validation.constraints.Email;
 
 import org.springdoc.core.annotations.ParameterObject;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import se.debageri.api.dto.ResumeSummaryDto;
+import se.debageri.api.dto.ResumeTopMatchedDto;
 import se.debageri.api.dto.ResumeUpdateRequest;
 import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.NotificationType;
@@ -42,6 +45,12 @@ public class ResumeController {
 	@Operation(summary = "Get resume statistics (total, today, last week, last month)")
 	public ResponseEntity<StatisticsResponse> getStatistics() {
 		return ResponseEntity.ok(resumeService.getStatistics());
+	}
+
+	@GetMapping("/topmatched")
+	@Operation(summary = "Get top 5 most recently uploaded resumes that have at least one positive match (decision: maybe, yes, strong_yes), with file name, owner name, upload time and match count")
+	public ResponseEntity<List<ResumeTopMatchedDto>> getTopMatched() {
+		return ResponseEntity.ok(resumeService.getTopMatched());
 	}
 
 	@GetMapping

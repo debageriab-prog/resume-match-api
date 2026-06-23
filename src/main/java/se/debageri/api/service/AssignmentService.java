@@ -2,7 +2,10 @@ package se.debageri.api.service;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import se.debageri.api.dto.AssignmentTopMatchedDto;
 import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.Assignment;
 import se.debageri.api.exception.AssignmentNotFoundException;
@@ -57,6 +61,23 @@ public class AssignmentService {
 
 	public Assignment findById(Long id) {
 		return assignmentRepository.findById(id).orElseThrow(() -> new AssignmentNotFoundException(id));
+	}
+
+	public List<AssignmentTopMatchedDto> getTopMatched() {
+		Map<Long, Long> matchCounts = resumeMatchRepository.findAssignmentMatchCounts().stream()
+				.collect(Collectors.toMap(ResumeMatchRepository.AssignmentMatchCountRow::getAssignmentId,
+						ResumeMatchRepository.AssignmentMatchCountRow::getMatchCount));
+
+		if (matchCounts.isEmpty()) {
+			return List.of();
+		}
+
+		return assignmentRepository.findAllById(matchCounts.keySet()).stream()
+				.sorted(Comparator.comparing(Assignment::getPublishedOn,
+						Comparator.nullsLast(Comparator.reverseOrder())))
+				.limit(5).map(a -> new AssignmentTopMatchedDto(a.getId(), a.getTitle(), a.getClient(),
+						a.getPublishedOn(), matchCounts.get(a.getId())))
+				.collect(Collectors.toList());
 	}
 
 	@Transactional

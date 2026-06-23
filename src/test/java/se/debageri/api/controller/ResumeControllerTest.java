@@ -22,6 +22,7 @@ import se.debageri.api.dto.ResumeUpdateRequest;
 import se.debageri.api.entity.AssignmentSeeker;
 import se.debageri.api.entity.NotificationType;
 import se.debageri.api.entity.Resume;
+import se.debageri.api.entity.ResumeMatch;
 import se.debageri.api.rabbit.AssignmentEventPublisher;
 import se.debageri.api.repository.AssignmentSeekerRepository;
 import se.debageri.api.repository.ResumeMatchRepository;
@@ -305,5 +306,138 @@ class ResumeControllerTest {
 		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
 		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
 		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+	}
+
+	@Test
+	void topMatched_shouldReturnEmptyList_whenNoMatchedResumesExist() {
+		// Given — resumes exist but no positive matches
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(0);
+	}
+
+	@Test
+	void topMatched_shouldReturnResumeWithExpectedFields() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("top.matched@example.com");
+		seeker.setFirstName("Jane");
+		seeker.setLastName("Doe");
+		seeker = seekerRepository.save(seeker);
+
+		Resume resume = new Resume();
+		resume.setOwner(seeker);
+		resume.setFileName("jane-doe-cv.pdf");
+		resume.setContentType("application/pdf");
+		resume.setNotificationType(NotificationType.User);
+		resume.setPdfBytes(new byte[]{});
+		resume = resumeRepository.save(resume);
+
+		ResumeMatch match = new ResumeMatch();
+		match.setResumeId(resume.getId());
+		match.setAssignmentId(1001L);
+		match.setMatchPercent(88);
+		match.setScore(0.88);
+		match.setDecision("yes");
+		resumeMatchRepository.save(match);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(1);
+		JsonNode item = response.getBody().get(0);
+		assertThat(item.get("fileName").asText()).isEqualTo("jane-doe-cv.pdf");
+		assertThat(item.get("ownerName").asText()).isEqualTo("Jane Doe");
+		assertThat(item.get("createdAt").isNull()).isFalse();
+		assertThat(item.get("matchCount").asLong()).isEqualTo(1);
+	}
+
+	@Test
+	void topMatched_shouldExcludeResumesWithOnlyNoDecision() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("no.decision@example.com");
+		Resume resume = createResume(seeker, NotificationType.User);
+
+		ResumeMatch noMatch = new ResumeMatch();
+		noMatch.setResumeId(resume.getId());
+		noMatch.setAssignmentId(2001L);
+		noMatch.setMatchPercent(25);
+		noMatch.setScore(0.25);
+		noMatch.setDecision("no");
+		resumeMatchRepository.save(noMatch);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(0);
+	}
+
+	@Test
+	void topMatched_shouldCountOnlyPositiveDecisions() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("mixed.decisions@example.com");
+		Resume resume = createResume(seeker, NotificationType.User);
+
+		// Two positive matches
+		for (String decision : new String[]{"yes", "maybe"}) {
+			ResumeMatch m = new ResumeMatch();
+			m.setResumeId(resume.getId());
+			m.setAssignmentId((long) decision.hashCode() + 5000);
+			m.setMatchPercent(70);
+			m.setScore(0.7);
+			m.setDecision(decision);
+			resumeMatchRepository.save(m);
+		}
+		// One "no" that should not be counted
+		ResumeMatch noMatch = new ResumeMatch();
+		noMatch.setResumeId(resume.getId());
+		noMatch.setAssignmentId(9999L);
+		noMatch.setMatchPercent(20);
+		noMatch.setScore(0.2);
+		noMatch.setDecision("no");
+		resumeMatchRepository.save(noMatch);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().size()).isEqualTo(1);
+		assertThat(response.getBody().get(0).get("matchCount").asLong()).isEqualTo(2);
+	}
+
+	@Test
+	void topMatched_shouldReturnAtMostFive() {
+		// Given — 7 resumes each with a positive match
+		for (int i = 0; i < 7; i++) {
+			AssignmentSeeker s = createSeeker("seeker" + i + "@test.com");
+			Resume r = createResume(s, NotificationType.User);
+
+			ResumeMatch m = new ResumeMatch();
+			m.setResumeId(r.getId());
+			m.setAssignmentId((long) (10000 + i));
+			m.setMatchPercent(60 + i);
+			m.setScore(0.6 + i * 0.01);
+			m.setDecision("yes");
+			resumeMatchRepository.save(m);
+		}
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/topmatched", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().isArray()).isTrue();
+		assertThat(response.getBody().size()).isEqualTo(5);
 	}
 }
