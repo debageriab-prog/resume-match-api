@@ -2,6 +2,9 @@ package se.debageri.api.service;
 
 import static se.debageri.api.util.StringUtil.isBlank;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -17,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import se.debageri.api.dto.AssignmentSeekerInfoDTO;
 import se.debageri.api.dto.ResumeProfileDTO;
 import se.debageri.api.dto.ResumeUpdateRequest;
+import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.AssignmentSeeker;
 import se.debageri.api.entity.NotificationType;
 import se.debageri.api.entity.Resume;
@@ -42,6 +46,19 @@ public class ResumeService {
 	private final AssignmentSeekerService assignmentSeekerService;
 	private final OpenAiService openAiService;
 	private final ObjectMapper objectMapper;
+
+	public StatisticsResponse getStatistics() {
+		ZoneId cet = ZoneId.of("CET");
+		Instant now = Instant.now();
+		LocalDate today = LocalDate.now(cet);
+		Instant startOfToday = today.atStartOfDay(cet).toInstant();
+		Instant startOfLastWeek = today.minusDays(7).atStartOfDay(cet).toInstant();
+		Instant startOfLastMonth = today.minusDays(30).atStartOfDay(cet).toInstant();
+		return new StatisticsResponse(resumeRepository.count(),
+				resumeRepository.countByCreatedAtBetween(startOfToday, now),
+				resumeRepository.countByCreatedAtBetween(startOfLastWeek, now),
+				resumeRepository.countByCreatedAtBetween(startOfLastMonth, now));
+	}
 
 	public Page<Resume> findAll(Pageable pageable) {
 		return resumeRepository.findAll(pageable);

@@ -7,6 +7,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.ResumeMatch;
 import se.debageri.api.service.ResumeMatchService;
 
@@ -24,6 +25,12 @@ import lombok.RequiredArgsConstructor;
 public class ResumeMatchController {
 
 	private final ResumeMatchService resumeMatchService;
+
+	@GetMapping("/statistics")
+	@Operation(summary = "Get resume match statistics (total, today, last week, last month)")
+	public ResponseEntity<StatisticsResponse> getStatistics() {
+		return ResponseEntity.ok(resumeMatchService.getStatistics());
+	}
 
 	@GetMapping
 	@Operation(summary = "Get all resume matches with pagination")

@@ -1,5 +1,8 @@
 package se.debageri.api.service;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -7,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.AssignmentSeeker;
 import se.debageri.api.entity.Resume;
 import se.debageri.api.exception.DuplicateResourceException;
@@ -27,6 +31,19 @@ public class AssignmentSeekerService {
 	private final AssignmentSeekerRepository assignmentSeekerRepository;
 	private final ResumeRepository resumeRepository;
 	private final ResumeMatchRepository resumeMatchRepository;
+
+	public StatisticsResponse getStatistics() {
+		ZoneId cet = ZoneId.of("CET");
+		Instant now = Instant.now();
+		LocalDate today = LocalDate.now(cet);
+		Instant startOfToday = today.atStartOfDay(cet).toInstant();
+		Instant startOfLastWeek = today.minusDays(7).atStartOfDay(cet).toInstant();
+		Instant startOfLastMonth = today.minusDays(30).atStartOfDay(cet).toInstant();
+		return new StatisticsResponse(assignmentSeekerRepository.count(),
+				assignmentSeekerRepository.countByCreatedAtBetween(startOfToday, now),
+				assignmentSeekerRepository.countByCreatedAtBetween(startOfLastWeek, now),
+				assignmentSeekerRepository.countByCreatedAtBetween(startOfLastMonth, now));
+	}
 
 	public Page<AssignmentSeeker> findAll(Pageable pageable) {
 		return assignmentSeekerRepository.findAll(pageable);

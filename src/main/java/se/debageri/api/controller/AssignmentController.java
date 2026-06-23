@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.Assignment;
 import se.debageri.api.service.AssignmentService;
 
@@ -25,6 +26,12 @@ import lombok.RequiredArgsConstructor;
 public class AssignmentController {
 
 	private final AssignmentService assignmentService;
+
+	@GetMapping("/statistics")
+	@Operation(summary = "Get assignment statistics (total, today, last week, last month)")
+	public ResponseEntity<StatisticsResponse> getStatistics() {
+		return ResponseEntity.ok(assignmentService.getStatistics());
+	}
 
 	@GetMapping
 	@Operation(summary = "Get all assignments with optional filtering and pagination")

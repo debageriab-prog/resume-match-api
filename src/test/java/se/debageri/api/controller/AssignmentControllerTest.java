@@ -2,6 +2,8 @@ package se.debageri.api.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -251,5 +253,41 @@ class AssignmentControllerTest {
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
 		assertThat(response.getBody().get("content").get(0).get("jobId").asLong()).isEqualTo(10001L);
+	}
+
+	@Test
+	void shouldReturnStatistics_whenNoAssignmentsExist() {
+		// Given — empty database
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldReturnStatistics_withCountsReflectingSeededData() {
+		// Given — assignments published today count toward all period buckets
+		Assignment a1 = buildAssignment(11001L, "Dev A", "CorpA", "p1");
+		a1.setPublishedOn(LocalDate.now());
+		Assignment a2 = buildAssignment(11002L, "Dev B", "CorpB", "p2");
+		a2.setPublishedOn(LocalDate.now());
+		assignmentRepository.save(a1);
+		assignmentRepository.save(a2);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignments/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
 	}
 }

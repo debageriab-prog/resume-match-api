@@ -217,4 +217,38 @@ class AssignmentSeekerControllerTest {
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
+
+	@Test
+	void shouldReturnStatistics_whenNoSeekersExist() {
+		// Given — empty database
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignment-seekers/statistics",
+				JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldReturnStatistics_withCountsReflectingSeededData() {
+		// Given
+		seekerRepository.save(buildSeeker("Ian", "I", "ian@example.com"));
+		seekerRepository.save(buildSeeker("Jane", "J", "jane@example.com"));
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/assignment-seekers/statistics",
+				JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+	}
 }

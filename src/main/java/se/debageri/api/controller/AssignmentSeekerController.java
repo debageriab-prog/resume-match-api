@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.AssignmentSeeker;
 import se.debageri.api.service.AssignmentSeekerService;
 
@@ -25,6 +26,12 @@ import lombok.RequiredArgsConstructor;
 public class AssignmentSeekerController {
 
 	private final AssignmentSeekerService assignmentSeekerService;
+
+	@GetMapping("/statistics")
+	@Operation(summary = "Get assignment seeker statistics (total, today, last week, last month)")
+	public ResponseEntity<StatisticsResponse> getStatistics() {
+		return ResponseEntity.ok(assignmentSeekerService.getStatistics());
+	}
 
 	@GetMapping
 	@Operation(summary = "Get all assignment seekers with pagination")

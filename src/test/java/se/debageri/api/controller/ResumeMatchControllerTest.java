@@ -245,4 +245,36 @@ class ResumeMatchControllerTest {
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(0);
 	}
+
+	@Test
+	void shouldReturnStatistics_whenNoMatchesExist() {
+		// Given — empty matches (setUp already runs but creates no matches)
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(0);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldReturnStatistics_withCountsReflectingSeededData() {
+		// Given
+		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
+		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6));
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/statistics", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+	}
 }
