@@ -38,16 +38,12 @@ public interface ResumeMatchRepository extends JpaRepository<ResumeMatch, Long> 
 		Long getMatchCount();
 	}
 
-	@Query("SELECT rm.assignmentId as assignmentId, COUNT(rm.id) as matchCount " +
-			"FROM ResumeMatch rm " +
-			"WHERE rm.decision IS NOT NULL AND rm.decision <> 'no' " +
-			"GROUP BY rm.assignmentId")
+	@Query("SELECT rm.assignmentId as assignmentId, COUNT(rm.id) as matchCount " + "FROM ResumeMatch rm "
+			+ "WHERE rm.decision IS NOT NULL AND rm.decision <> 'no' " + "GROUP BY rm.assignmentId")
 	List<AssignmentMatchCountRow> findAssignmentMatchCounts();
 
-	@Query("SELECT rm.resumeId as resumeId, COUNT(rm.id) as matchCount " +
-			"FROM ResumeMatch rm " +
-			"WHERE rm.decision IS NOT NULL AND rm.decision <> 'no' " +
-			"GROUP BY rm.resumeId")
+	@Query("SELECT rm.resumeId as resumeId, COUNT(rm.id) as matchCount " + "FROM ResumeMatch rm "
+			+ "WHERE rm.decision IS NOT NULL AND rm.decision <> 'no' " + "GROUP BY rm.resumeId")
 	List<ResumeMatchCountRow> findResumeMatchCounts();
 
 	@Query("SELECT rm FROM ResumeMatch rm WHERE rm.decision IS NOT NULL AND rm.decision <> 'no' ORDER BY rm.judgedAt DESC")

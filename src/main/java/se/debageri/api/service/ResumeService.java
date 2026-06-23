@@ -79,31 +79,22 @@ public class ResumeService {
 	}
 
 	public List<ResumeTopMatchedDto> getTopMatched() {
-		Map<Long, Long> matchCounts = resumeMatchRepository.findResumeMatchCounts()
-				.stream()
-				.collect(Collectors.toMap(
-						ResumeMatchRepository.ResumeMatchCountRow::getResumeId,
+		Map<Long, Long> matchCounts = resumeMatchRepository.findResumeMatchCounts().stream()
+				.collect(Collectors.toMap(ResumeMatchRepository.ResumeMatchCountRow::getResumeId,
 						ResumeMatchRepository.ResumeMatchCountRow::getMatchCount));
 
 		if (matchCounts.isEmpty()) {
 			return List.of();
 		}
 
-		return resumeRepository.findAllById(matchCounts.keySet())
-				.stream()
-				.sorted(Comparator.comparing(Resume::getCreatedAt,
-						Comparator.nullsLast(Comparator.reverseOrder())))
-				.limit(5)
-				.map(r -> {
+		return resumeRepository.findAllById(matchCounts.keySet()).stream()
+				.sorted(Comparator.comparing(Resume::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+				.limit(5).map(r -> {
 					AssignmentSeeker owner = r.getOwner();
-					String ownerName = owner != null
-							? (owner.getFirstName() + " " + owner.getLastName()).trim()
-							: null;
-					return new ResumeTopMatchedDto(
-							r.getId(), r.getFileName(), ownerName, r.getCreatedAt(),
+					String ownerName = owner != null ? (owner.getFirstName() + " " + owner.getLastName()).trim() : null;
+					return new ResumeTopMatchedDto(r.getId(), r.getFileName(), ownerName, r.getCreatedAt(),
 							matchCounts.get(r.getId()));
-				})
-				.collect(Collectors.toList());
+				}).collect(Collectors.toList());
 	}
 
 	@Transactional

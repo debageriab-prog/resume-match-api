@@ -1,8 +1,8 @@
 package se.debageri.api.controller;
 
-import jakarta.validation.constraints.Email;
-
 import java.util.List;
+
+import jakarta.validation.constraints.Email;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;

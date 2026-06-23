@@ -78,21 +78,16 @@ public class ResumeMatchService {
 			return List.of();
 		}
 
-		Set<Long> resumeIds = matches.stream()
-				.map(ResumeMatch::getResumeId)
-				.collect(Collectors.toSet());
+		Set<Long> resumeIds = matches.stream().map(ResumeMatch::getResumeId).collect(Collectors.toSet());
 
-		Map<Long, Resume> resumeMap = resumeRepository.findAllById(resumeIds)
-				.stream()
+		Map<Long, Resume> resumeMap = resumeRepository.findAllById(resumeIds).stream()
 				.collect(Collectors.toMap(Resume::getId, r -> r));
 
-		return matches.stream()
-				.map(rm -> {
-					Resume resume = resumeMap.get(rm.getResumeId());
-					String fileName = resume != null ? resume.getFileName() : null;
-					AssignmentSeeker seeker = resume != null ? resume.getOwner() : null;
-					return new ResumeMatchTopMatchedDto(seeker, fileName, rm.getMatchPercent(), rm.getJudgedAt());
-				})
-				.collect(Collectors.toList());
+		return matches.stream().map(rm -> {
+			Resume resume = resumeMap.get(rm.getResumeId());
+			String fileName = resume != null ? resume.getFileName() : null;
+			AssignmentSeeker seeker = resume != null ? resume.getOwner() : null;
+			return new ResumeMatchTopMatchedDto(seeker, fileName, rm.getMatchPercent(), rm.getJudgedAt());
+		}).collect(Collectors.toList());
 	}
 }

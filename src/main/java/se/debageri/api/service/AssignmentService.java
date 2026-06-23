@@ -64,24 +64,19 @@ public class AssignmentService {
 	}
 
 	public List<AssignmentTopMatchedDto> getTopMatched() {
-		Map<Long, Long> matchCounts = resumeMatchRepository.findAssignmentMatchCounts()
-				.stream()
-				.collect(Collectors.toMap(
-						ResumeMatchRepository.AssignmentMatchCountRow::getAssignmentId,
+		Map<Long, Long> matchCounts = resumeMatchRepository.findAssignmentMatchCounts().stream()
+				.collect(Collectors.toMap(ResumeMatchRepository.AssignmentMatchCountRow::getAssignmentId,
 						ResumeMatchRepository.AssignmentMatchCountRow::getMatchCount));
 
 		if (matchCounts.isEmpty()) {
 			return List.of();
 		}
 
-		return assignmentRepository.findAllById(matchCounts.keySet())
-				.stream()
+		return assignmentRepository.findAllById(matchCounts.keySet()).stream()
 				.sorted(Comparator.comparing(Assignment::getPublishedOn,
 						Comparator.nullsLast(Comparator.reverseOrder())))
-				.limit(5)
-				.map(a -> new AssignmentTopMatchedDto(
-						a.getId(), a.getTitle(), a.getClient(), a.getPublishedOn(),
-						matchCounts.get(a.getId())))
+				.limit(5).map(a -> new AssignmentTopMatchedDto(a.getId(), a.getTitle(), a.getClient(),
+						a.getPublishedOn(), matchCounts.get(a.getId())))
 				.collect(Collectors.toList());
 	}
 
