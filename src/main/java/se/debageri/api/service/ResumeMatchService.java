@@ -2,7 +2,7 @@ package se.debageri.api.service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,10 +24,12 @@ public class ResumeMatchService {
 	private final ResumeMatchRepository resumeMatchRepository;
 
 	public StatisticsResponse getStatistics() {
+		ZoneId cet = ZoneId.of("CET");
 		Instant now = Instant.now();
-		Instant startOfToday = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
-		Instant startOfLastWeek = now.minusSeconds(7 * 24 * 60 * 60);
-		Instant startOfLastMonth = now.minusSeconds(30L * 24 * 60 * 60);
+		LocalDate today = LocalDate.now(cet);
+		Instant startOfToday = today.atStartOfDay(cet).toInstant();
+		Instant startOfLastWeek = today.minusDays(7).atStartOfDay(cet).toInstant();
+		Instant startOfLastMonth = today.minusDays(30).atStartOfDay(cet).toInstant();
 		return new StatisticsResponse(resumeMatchRepository.count(),
 				resumeMatchRepository.countByMatchedAtBetween(startOfToday, now),
 				resumeMatchRepository.countByMatchedAtBetween(startOfLastWeek, now),

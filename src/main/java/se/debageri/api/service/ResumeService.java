@@ -4,7 +4,7 @@ import static se.debageri.api.util.StringUtil.isBlank;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -48,10 +48,12 @@ public class ResumeService {
 	private final ObjectMapper objectMapper;
 
 	public StatisticsResponse getStatistics() {
+		ZoneId cet = ZoneId.of("CET");
 		Instant now = Instant.now();
-		Instant startOfToday = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
-		Instant startOfLastWeek = now.minusSeconds(7 * 24 * 60 * 60);
-		Instant startOfLastMonth = now.minusSeconds(30L * 24 * 60 * 60);
+		LocalDate today = LocalDate.now(cet);
+		Instant startOfToday = today.atStartOfDay(cet).toInstant();
+		Instant startOfLastWeek = today.minusDays(7).atStartOfDay(cet).toInstant();
+		Instant startOfLastMonth = today.minusDays(30).atStartOfDay(cet).toInstant();
 		return new StatisticsResponse(resumeRepository.count(),
 				resumeRepository.countByCreatedAtBetween(startOfToday, now),
 				resumeRepository.countByCreatedAtBetween(startOfLastWeek, now),

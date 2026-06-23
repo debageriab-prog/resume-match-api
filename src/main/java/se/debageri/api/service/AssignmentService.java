@@ -1,6 +1,7 @@
 package se.debageri.api.service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -37,7 +38,7 @@ public class AssignmentService {
 	private final AssignmentEventPublisher assignmentEventPublisher;
 
 	public StatisticsResponse getStatistics() {
-		LocalDate today = LocalDate.now();
+		LocalDate today = LocalDate.now(ZoneId.of("CET"));
 		LocalDate startOfLastWeek = today.minusDays(7);
 		LocalDate startOfLastMonth = today.minusDays(30);
 		return new StatisticsResponse(assignmentRepository.count(),
