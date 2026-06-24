@@ -78,6 +78,10 @@ public class ResumeService {
 		return resumeRepository.findAll((root, query, cb) -> cb.equal(root.get("owner").get("id"), ownerId), pageable);
 	}
 
+	public long getMatchedCount(Long resumeId) {
+		return resumeMatchRepository.countByResumeIdAndDecisionIsNotNullAndDecisionNot(resumeId, "no");
+	}
+
 	public List<ResumeTopMatchedDto> getTopMatched() {
 		Map<Long, Long> matchCounts = resumeMatchRepository.findResumeMatchCounts().stream()
 				.collect(Collectors.toMap(ResumeMatchRepository.ResumeMatchCountRow::getResumeId,
