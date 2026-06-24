@@ -417,6 +417,139 @@ class ResumeControllerTest {
 	}
 
 	@Test
+	void shouldIncludeFileNameCreatedAtAndMatchedCount_inGetSummaryResponse() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("summary.fields@example.com");
+		Resume saved = createResume(seeker, NotificationType.User);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/" + saved.getId(), JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().has("fileName")).isTrue();
+		assertThat(response.getBody().get("fileName").asText()).isEqualTo("test-resume.pdf");
+		assertThat(response.getBody().has("createdAt")).isTrue();
+		assertThat(response.getBody().get("createdAt").isNull()).isFalse();
+		assertThat(response.getBody().has("matchedCount")).isTrue();
+		assertThat(response.getBody().get("matchedCount").asLong()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldReturnZeroMatchedCount_whenNoQualifyingMatchesExist() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("no.qualifying@example.com");
+		Resume resume = createResume(seeker, NotificationType.User);
+
+		ResumeMatch nullDecision = new ResumeMatch();
+		nullDecision.setResumeId(resume.getId());
+		nullDecision.setAssignmentId(3001L);
+		nullDecision.setMatchPercent(50);
+		nullDecision.setScore(0.5);
+		resumeMatchRepository.save(nullDecision);
+
+		ResumeMatch noDecision = new ResumeMatch();
+		noDecision.setResumeId(resume.getId());
+		noDecision.setAssignmentId(3002L);
+		noDecision.setMatchPercent(30);
+		noDecision.setScore(0.3);
+		noDecision.setDecision("no");
+		resumeMatchRepository.save(noDecision);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/" + resume.getId(), JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("matchedCount").asLong()).isEqualTo(0);
+	}
+
+	@Test
+	void shouldComputeMatchedCountCorrectly_countingOnlyValidDecisions() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("valid.decisions@example.com");
+		Resume resume = createResume(seeker, NotificationType.User);
+
+		for (String decision : new String[]{"yes", "maybe", "strong_yes"}) {
+			ResumeMatch m = new ResumeMatch();
+			m.setResumeId(resume.getId());
+			m.setAssignmentId((long) decision.hashCode() + 8000);
+			m.setMatchPercent(80);
+			m.setScore(0.8);
+			m.setDecision(decision);
+			resumeMatchRepository.save(m);
+		}
+
+		ResumeMatch noMatch = new ResumeMatch();
+		noMatch.setResumeId(resume.getId());
+		noMatch.setAssignmentId(8999L);
+		noMatch.setMatchPercent(10);
+		noMatch.setScore(0.1);
+		noMatch.setDecision("no");
+		resumeMatchRepository.save(noMatch);
+
+		ResumeMatch nullMatch = new ResumeMatch();
+		nullMatch.setResumeId(resume.getId());
+		nullMatch.setAssignmentId(9000L);
+		nullMatch.setMatchPercent(45);
+		nullMatch.setScore(0.45);
+		resumeMatchRepository.save(nullMatch);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes/" + resume.getId(), JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("matchedCount").asLong()).isEqualTo(3);
+	}
+
+	@Test
+	void shouldNotExposeMatchedCountFileNameOrCreatedAt_inUpdateResponse() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("update.dto.shape@example.com");
+		Resume saved = createResume(seeker, NotificationType.User);
+		ResumeUpdateRequest updateRequest = new ResumeUpdateRequest("mgr@example.com", NotificationType.Manager);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.exchange("/api/resumes/" + saved.getId(), HttpMethod.PUT,
+				new HttpEntity<>(updateRequest), JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("id").asLong()).isEqualTo(saved.getId());
+		assertThat(response.getBody().get("notificationType").asText()).isEqualTo("Manager");
+		assertThat(response.getBody().get("matchedCount")).isNull();
+		assertThat(response.getBody().get("fileName")).isNull();
+		assertThat(response.getBody().get("createdAt")).isNull();
+	}
+
+	@Test
+	void shouldIncludeMatchedCount_inPaginatedGetAllResponse() {
+		// Given
+		AssignmentSeeker seeker = createSeeker("paginated.matched@example.com");
+		Resume resume = createResume(seeker, NotificationType.User);
+
+		ResumeMatch match = new ResumeMatch();
+		match.setResumeId(resume.getId());
+		match.setAssignmentId(7001L);
+		match.setMatchPercent(75);
+		match.setScore(0.75);
+		match.setDecision("yes");
+		resumeMatchRepository.save(match);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resumes", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		JsonNode first = response.getBody().get("content").get(0);
+		assertThat(first.has("matchedCount")).isTrue();
+		assertThat(first.get("matchedCount").asLong()).isEqualTo(1);
+		assertThat(first.has("fileName")).isTrue();
+		assertThat(first.has("createdAt")).isTrue();
+	}
+
+	@Test
 	void topMatched_shouldReturnAtMostFive() {
 		// Given — 7 resumes each with a positive match
 		for (int i = 0; i < 7; i++) {

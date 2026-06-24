@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import se.debageri.api.dto.ResumeSummaryDto;
 import se.debageri.api.dto.ResumeTopMatchedDto;
+import se.debageri.api.dto.ResumeUpdateDto;
 import se.debageri.api.dto.ResumeUpdateRequest;
 import se.debageri.api.dto.StatisticsResponse;
 import se.debageri.api.entity.NotificationType;
@@ -93,9 +94,9 @@ public class ResumeController {
 	@Operation(summary = "Update a resume (managerEmail and notificationType only)")
 	@ApiResponses({@ApiResponse(responseCode = "200", description = "Resume updated"),
 			@ApiResponse(responseCode = "404", description = "Resume not found")})
-	public ResponseEntity<ResumeSummaryDto> update(@Parameter(description = "Resume ID") @PathVariable("id") Long id,
+	public ResponseEntity<ResumeUpdateDto> update(@Parameter(description = "Resume ID") @PathVariable("id") Long id,
 			@RequestBody ResumeUpdateRequest request) {
-		return ResponseEntity.ok(toSummary(resumeService.update(id, request)));
+		return ResponseEntity.ok(toUpdateDto(resumeService.update(id, request)));
 	}
 
 	@DeleteMapping("/{id}")
@@ -108,7 +109,13 @@ public class ResumeController {
 	}
 
 	private ResumeSummaryDto toSummary(Resume resume) {
+		long matchedCount = resumeService.getMatchedCount(resume.getId());
 		return new ResumeSummaryDto(resume.getId(), resume.getOwner(), resume.getManagerEmail(),
+				resume.getNotificationType(), resume.getFileName(), resume.getCreatedAt(), matchedCount);
+	}
+
+	private ResumeUpdateDto toUpdateDto(Resume resume) {
+		return new ResumeUpdateDto(resume.getId(), resume.getOwner(), resume.getManagerEmail(),
 				resume.getNotificationType());
 	}
 
