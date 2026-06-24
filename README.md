@@ -42,15 +42,29 @@ Intended to serve as the backend for a front-end application — no security lay
 
 ### Resumes — `/api/resumes`
 
-Returns a summary view `(id, owner, managerEmail, notificationType)` — full PDF bytes and text are not exposed in list/detail responses.
+GET endpoints return a `ResumeSummaryDto` — full PDF bytes and extracted text are not exposed. The summary includes:
+
+| Field | Source |
+|---|---|
+| `id` | Resume ID |
+| `owner` | `AssignmentSeeker` entity |
+| `managerEmail` | Resume field |
+| `notificationType` | Resume field |
+| `fileName` | Original uploaded file name |
+| `createdAt` | Resume creation timestamp |
+| `matchedCount` | Count of `ResumeMatch` rows where `decision IS NOT NULL AND decision != 'no'` |
+
+The `PUT /{id}` endpoint returns a `ResumeUpdateDto` with only the mutable fields (`id`, `owner`, `managerEmail`, `notificationType`) — no `fileName`, `createdAt`, or `matchedCount`.
 
 | Method   | Path                    | Description                                                      |
 |----------|-------------------------|------------------------------------------------------------------|
-| `GET`    | `/`                     | List with pagination                                             |
-| `GET`    | `/{id}`                 | Get summary by ID                                                |
-| `GET`    | `/owner/{ownerId}`      | List resumes for a seeker with pagination                        |
+| `GET`    | `/`                     | List with pagination (`ResumeSummaryDto`)                        |
+| `GET`    | `/{id}`                 | Get summary by ID (`ResumeSummaryDto`)                           |
+| `GET`    | `/owner/{ownerId}`      | List resumes for a seeker with pagination (`ResumeSummaryDto`)   |
+| `GET`    | `/statistics`           | Total, today, last-week, last-month resume counts                |
+| `GET`    | `/topmatched`           | Top 5 most recently uploaded resumes with at least one positive match |
 | `POST`   | `/upload`               | Upload a PDF — LLM extracts owner identity, stores parsed profile |
-| `PUT`    | `/{id}`                 | Update mutable fields (fileName, contentType, pdfBytes, extractedText, profileJson, managerEmail, notificationType) |
+| `PUT`    | `/{id}`                 | Update `managerEmail` and `notificationType` (returns `ResumeUpdateDto`) |
 | `DELETE` | `/{id}`                 | Delete resume, its match records, and owner if no resumes remain |
 
 **Upload flow** (`POST /api/resumes/upload`): PDFBox extracts text → OpenAI identifies seeker name/email → seeker is upserted → OpenAI builds a structured `ResumeProfileDTO` (skills, roles, tools, etc.) → all data is persisted to MySQL.

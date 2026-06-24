@@ -63,8 +63,12 @@ src/main/java/se/debageri/api/
 ├── dto/
 │   ├── AssignmentSeekerInfoDTO.java # firstName, lastName, email — extracted by LLM
 │   ├── ResumeProfileDTO.java        # structured profile: skills, tools, roles, etc.
-│   ├── ResumeSummaryDto.java
-│   └── ResumeUpdateRequest.java     # record: managerEmail, notificationType
+│   ├── ResumeSummaryDto.java        # GET response: id, owner, managerEmail, notificationType, fileName, createdAt, matchedCount
+│   ├── ResumeUpdateDto.java         # PUT response: id, owner, managerEmail, notificationType (no fileName/createdAt/matchedCount)
+│   ├── ResumeUpdateRequest.java     # record: managerEmail, notificationType
+│   ├── ResumeTopMatchedDto.java     # top-matched list item: id, fileName, ownerName, createdAt, matchCount
+│   ├── ResumeMatchTopMatchedDto.java# used by ResumeMatchController
+│   └── StatisticsResponse.java      # totalCount, todayCount, lastWeekCount, lastMonthCount
 │
 ├── rabbit/
 │   ├── RabbitConfig.java            # TopicExchange "events.topic"
@@ -167,10 +171,10 @@ src/test/
 ├── java/se/debageri/api/
 │   ├── ResumeMatchApiApplicationTests.java         # context smoke test
 │   └── controller/
-│       ├── AssignmentControllerTest.java           # 13 endpoint tests
-│       ├── AssignmentSeekerControllerTest.java     # 11 endpoint tests
-│       ├── ResumeControllerTest.java               # 13 endpoint tests
-│       └── ResumeMatchControllerTest.java          # 10 endpoint tests
+│       ├── AssignmentControllerTest.java           # 20 endpoint tests
+│       ├── AssignmentSeekerControllerTest.java     # 13 endpoint tests
+│       ├── ResumeControllerTest.java               # 25 endpoint tests (incl. ResumeSummaryDto field coverage)
+│       └── ResumeMatchControllerTest.java          # 18 endpoint tests
 └── resources/
     └── application-test.yml                       # H2 + exclusions
 ```
@@ -212,7 +216,7 @@ Two jobs run on every push and pull request to `main`:
 | Job | Command | What it validates |
 |---|---|---|
 | `build` | `mvn package -DskipTests` | Compiles, packages the JAR |
-| `test` | `mvn test` | All 48 tests against H2 in-memory DB |
+| `test` | `mvn test` | All 77 tests against H2 in-memory DB |
 
 The `test` job depends on `build` (via `needs: build`). Test results are uploaded as an artifact (`test-results/surefire-reports`).
 
