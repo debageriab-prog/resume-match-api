@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.criteria.Predicate;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +18,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.criteria.Predicate;
 import se.debageri.api.dto.ResumeMatchDto;
 import se.debageri.api.dto.ResumeMatchTopMatchedDto;
 import se.debageri.api.dto.StatisticsResponse;
@@ -135,8 +136,7 @@ public class ResumeMatchService {
 		return toDto(rm, resumeMap, assignmentMap);
 	}
 
-	private ResumeMatchDto toDto(ResumeMatch rm, Map<Long, Resume> resumeMap,
-			Map<Long, Assignment> assignmentMap) {
+	private ResumeMatchDto toDto(ResumeMatch rm, Map<Long, Resume> resumeMap, Map<Long, Assignment> assignmentMap) {
 		Assignment assignment = assignmentMap.get(rm.getAssignmentId());
 		Resume resume = resumeMap.get(rm.getResumeId());
 
@@ -149,8 +149,7 @@ public class ResumeMatchService {
 			ownerFullName = resume.getOwner().getFirstName() + " " + resume.getOwner().getLastName();
 		}
 		ResumeMatchDto.ResumeSummary resumeSummary = new ResumeMatchDto.ResumeSummary(
-				resume != null ? resume.getId() : rm.getResumeId(),
-				resume != null ? resume.getFileName() : null,
+				resume != null ? resume.getId() : rm.getResumeId(), resume != null ? resume.getFileName() : null,
 				ownerFullName);
 
 		return new ResumeMatchDto(rm.getId(), assignmentSummary, resumeSummary, rm.getScore(), rm.getMatchPercent(),

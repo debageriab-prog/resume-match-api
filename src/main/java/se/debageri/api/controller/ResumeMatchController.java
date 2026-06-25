@@ -49,7 +49,8 @@ public class ResumeMatchController {
 			@Parameter(description = "Filter by decision presence: true = has decision, false = no decision") @RequestParam(required = false) Boolean decisionNotNull,
 			@Parameter(description = "Filter by decision value (no, maybe, yes, strong_yes)") @RequestParam(required = false) String decision,
 			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
-		return ResponseEntity.ok(resumeMatchService.findAll(assignmentId, resumeId, decisionNotNull, decision, pageable));
+		return ResponseEntity
+				.ok(resumeMatchService.findAll(assignmentId, resumeId, decisionNotNull, decision, pageable));
 	}
 
 	@GetMapping("/{id}")

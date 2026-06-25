@@ -165,8 +165,8 @@ class ResumeMatchControllerTest {
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6));
 
 		// When
-		ResponseEntity<JsonNode> response = restTemplate.getForEntity(
-				"/api/resume-matches?assignmentId=" + savedAssignment.getId(), JsonNode.class);
+		ResponseEntity<JsonNode> response = restTemplate
+				.getForEntity("/api/resume-matches?assignmentId=" + savedAssignment.getId(), JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -182,8 +182,8 @@ class ResumeMatchControllerTest {
 		resumeMatchRepository.save(buildMatch(savedResume.getId() + 1, savedAssignment.getId(), 60, 0.6));
 
 		// When
-		ResponseEntity<JsonNode> response = restTemplate.getForEntity(
-				"/api/resume-matches?resumeId=" + savedResume.getId(), JsonNode.class);
+		ResponseEntity<JsonNode> response = restTemplate
+				.getForEntity("/api/resume-matches?resumeId=" + savedResume.getId(), JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -203,8 +203,8 @@ class ResumeMatchControllerTest {
 		resumeMatchRepository.save(withoutDecision);
 
 		// When
-		ResponseEntity<JsonNode> response = restTemplate
-				.getForEntity("/api/resume-matches?decisionNotNull=true", JsonNode.class);
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decisionNotNull=true",
+				JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -223,8 +223,8 @@ class ResumeMatchControllerTest {
 		resumeMatchRepository.save(withoutDecision);
 
 		// When
-		ResponseEntity<JsonNode> response = restTemplate
-				.getForEntity("/api/resume-matches?decisionNotNull=false", JsonNode.class);
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decisionNotNull=false",
+				JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -243,8 +243,8 @@ class ResumeMatchControllerTest {
 		}
 
 		// When
-		ResponseEntity<JsonNode> response = restTemplate
-				.getForEntity("/api/resume-matches?decision=strong_yes", JsonNode.class);
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decision=strong_yes",
+				JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -257,8 +257,8 @@ class ResumeMatchControllerTest {
 		// Given — no setup needed
 
 		// When
-		ResponseEntity<JsonNode> response = restTemplate
-				.getForEntity("/api/resume-matches?decision=invalid_value", JsonNode.class);
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decision=invalid_value",
+				JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
