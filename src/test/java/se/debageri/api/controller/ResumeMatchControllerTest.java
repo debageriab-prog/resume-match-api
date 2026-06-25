@@ -101,6 +101,10 @@ class ResumeMatchControllerTest {
 		return match;
 	}
 
+	// ──────────────────────────────────────────────────────────────────────────
+	// GET /api/resume-matches (with enriched response shape)
+	// ──────────────────────────────────────────────────────────────────────────
+
 	@Test
 	void shouldReturnEmptyPage_whenNoMatchesExist() {
 		// Given — no matches in database
@@ -129,6 +133,170 @@ class ResumeMatchControllerTest {
 	}
 
 	@Test
+	void shouldReturnEnrichedAssignmentAndResume_inGetAll() {
+		// Given
+		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		JsonNode item = response.getBody().get("content").get(0);
+		assertThat(item.get("assignment")).isNotNull();
+		assertThat(item.get("assignment").get("id").asLong()).isEqualTo(savedAssignment.getId());
+		assertThat(item.get("assignment").get("title").asText()).isEqualTo("Test Role");
+		assertThat(item.get("resume")).isNotNull();
+		assertThat(item.get("resume").get("id").asLong()).isEqualTo(savedResume.getId());
+		assertThat(item.get("resume").get("fileName").asText()).isEqualTo("match-test.pdf");
+		assertThat(item.get("resume").get("ownerFullName").asText()).isEqualTo("Test Seeker");
+		assertThat(item.has("assignmentId")).isFalse();
+		assertThat(item.has("resumeId")).isFalse();
+	}
+
+	// ──────────────────────────────────────────────────────────────────────────
+	// GET /api/resume-matches — filtering
+	// ──────────────────────────────────────────────────────────────────────────
+
+	@Test
+	void shouldFilterByAssignmentId() {
+		// Given
+		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
+		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6));
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate
+				.getForEntity("/api/resume-matches?assignmentId=" + savedAssignment.getId(), JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("content").get(0).get("assignment").get("id").asLong())
+				.isEqualTo(savedAssignment.getId());
+	}
+
+	@Test
+	void shouldFilterByResumeId() {
+		// Given
+		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
+		resumeMatchRepository.save(buildMatch(savedResume.getId() + 1, savedAssignment.getId(), 60, 0.6));
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate
+				.getForEntity("/api/resume-matches?resumeId=" + savedResume.getId(), JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("content").get(0).get("resume").get("id").asLong())
+				.isEqualTo(savedResume.getId());
+	}
+
+	@Test
+	void shouldFilterByDecisionNotNull_true() {
+		// Given
+		ResumeMatch withDecision = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		withDecision.setDecision("yes");
+		resumeMatchRepository.save(withDecision);
+
+		ResumeMatch withoutDecision = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6);
+		resumeMatchRepository.save(withoutDecision);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decisionNotNull=true",
+				JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("content").get(0).get("decision").asText()).isEqualTo("yes");
+	}
+
+	@Test
+	void shouldFilterByDecisionNotNull_false() {
+		// Given
+		ResumeMatch withDecision = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		withDecision.setDecision("yes");
+		resumeMatchRepository.save(withDecision);
+
+		ResumeMatch withoutDecision = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6);
+		resumeMatchRepository.save(withoutDecision);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decisionNotNull=false",
+				JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		JsonNode decisionNode = response.getBody().get("content").get(0).path("decision");
+		assertThat(decisionNode.isNull() || decisionNode.isMissingNode()).isTrue();
+	}
+
+	@Test
+	void shouldFilterByDecisionValue() {
+		// Given
+		for (String dec : new String[]{"no", "maybe", "yes", "strong_yes"}) {
+			ResumeMatch m = buildMatch(savedResume.getId(), savedAssignment.getId() + dec.length(), 70, 0.7);
+			m.setDecision(dec);
+			resumeMatchRepository.save(m);
+		}
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decision=strong_yes",
+				JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("content").get(0).get("decision").asText()).isEqualTo("strong_yes");
+	}
+
+	@Test
+	void shouldReturn400_whenDecisionValueIsInvalid() {
+		// Given — no setup needed
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decision=invalid_value",
+				JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().get("message").asText()).contains("invalid_value");
+	}
+
+	@Test
+	void shouldSupportCombinedFilters_assignmentIdAndDecision() {
+		// Given
+		ResumeMatch match1 = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		match1.setDecision("yes");
+		resumeMatchRepository.save(match1);
+
+		ResumeMatch match2 = buildMatch(savedResume.getId() + 1, savedAssignment.getId(), 70, 0.7);
+		match2.setDecision("no");
+		resumeMatchRepository.save(match2);
+
+		ResumeMatch match3 = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6);
+		match3.setDecision("yes");
+		resumeMatchRepository.save(match3);
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity(
+				"/api/resume-matches?assignmentId=" + savedAssignment.getId() + "&decision=yes", JsonNode.class);
+
+		// Then
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("content").get(0).get("decision").asText()).isEqualTo("yes");
+		assertThat(response.getBody().get("content").get(0).get("assignment").get("id").asLong())
+				.isEqualTo(savedAssignment.getId());
+	}
+
+	// ──────────────────────────────────────────────────────────────────────────
+	// GET /api/resume-matches/{id} (enriched response shape)
+	// ──────────────────────────────────────────────────────────────────────────
+
+	@Test
 	void shouldReturnMatch_whenItExists() {
 		// Given
 		ResumeMatch saved = resumeMatchRepository
@@ -143,6 +311,11 @@ class ResumeMatchControllerTest {
 		assertThat(response.getBody().get("id").asLong()).isEqualTo(saved.getId());
 		assertThat(response.getBody().get("matchPercent").asInt()).isEqualTo(75);
 		assertThat(response.getBody().get("score").asDouble()).isEqualTo(0.75);
+		assertThat(response.getBody().get("assignment").get("id").asLong()).isEqualTo(savedAssignment.getId());
+		assertThat(response.getBody().get("assignment").get("title").asText()).isEqualTo("Test Role");
+		assertThat(response.getBody().get("resume").get("id").asLong()).isEqualTo(savedResume.getId());
+		assertThat(response.getBody().get("resume").get("fileName").asText()).isEqualTo("match-test.pdf");
+		assertThat(response.getBody().get("resume").get("ownerFullName").asText()).isEqualTo("Test Seeker");
 	}
 
 	@Test
@@ -158,6 +331,10 @@ class ResumeMatchControllerTest {
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 		assertThat(response.getBody().get("message").asText()).contains("9999");
 	}
+
+	// ──────────────────────────────────────────────────────────────────────────
+	// GET /api/resume-matches/resume/{resumeId}
+	// ──────────────────────────────────────────────────────────────────────────
 
 	@Test
 	void shouldReturnMatchesByResumeId_sortedByMatchPercentDesc() {
@@ -248,6 +425,10 @@ class ResumeMatchControllerTest {
 		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(0);
 	}
 
+	// ──────────────────────────────────────────────────────────────────────────
+	// GET /api/resume-matches/statistics
+	// ──────────────────────────────────────────────────────────────────────────
+
 	@Test
 	void shouldReturnStatistics_whenNoMatchesExist() {
 		// Given — empty matches (setUp already runs but creates no matches)
@@ -279,6 +460,10 @@ class ResumeMatchControllerTest {
 		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
 		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
 	}
+
+	// ──────────────────────────────────────────────────────────────────────────
+	// GET /api/resume-matches/topmatched
+	// ──────────────────────────────────────────────────────────────────────────
 
 	@Test
 	void topMatched_shouldReturnEmptyList_whenNoMatchesExist() {
@@ -341,7 +526,6 @@ class ResumeMatchControllerTest {
 	void topMatched_shouldExcludeMatchesWithNullDecision() {
 		// Given — match with null decision
 		ResumeMatch nullDecision = buildMatch(savedResume.getId(), savedAssignment.getId(), 75, 0.75);
-		// decision left null
 		resumeMatchRepository.save(nullDecision);
 
 		// When
