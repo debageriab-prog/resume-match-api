@@ -3,6 +3,7 @@ package se.debageri.api.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -273,11 +274,12 @@ class AssignmentControllerTest {
 
 	@Test
 	void shouldReturnStatistics_withCountsReflectingSeededData() {
-		// Given — assignments published today count toward all period buckets
+		// Given — assignments published today (CET) count toward all period buckets
+		LocalDate todayCet = LocalDate.now(ZoneId.of("CET"));
 		Assignment a1 = buildAssignment(11001L, "Dev A", "CorpA", "p1");
-		a1.setPublishedOn(LocalDate.now());
+		a1.setPublishedOn(todayCet);
 		Assignment a2 = buildAssignment(11002L, "Dev B", "CorpB", "p2");
-		a2.setPublishedOn(LocalDate.now());
+		a2.setPublishedOn(todayCet);
 		assignmentRepository.save(a1);
 		assignmentRepository.save(a2);
 
