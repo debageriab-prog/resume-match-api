@@ -26,6 +26,11 @@ public class GlobalExceptionHandler {
 		return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT);
 	}
 
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+		return buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+	}
+
 	@ExceptionHandler(PropertyReferenceException.class)
 	public ResponseEntity<Map<String, Object>> handlePropertyReference(PropertyReferenceException ex) {
 		return buildErrorResponse("Invalid sort property: '" + ex.getPropertyName() + "'", HttpStatus.BAD_REQUEST);

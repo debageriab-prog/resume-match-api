@@ -6,13 +6,14 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import se.debageri.api.entity.ResumeMatch;
 
 @Repository
-public interface ResumeMatchRepository extends JpaRepository<ResumeMatch, Long> {
+public interface ResumeMatchRepository extends JpaRepository<ResumeMatch, Long>, JpaSpecificationExecutor<ResumeMatch> {
 
 	Page<ResumeMatch> findByResumeId(Long resumeId, Pageable pageable);
 
