@@ -9,7 +9,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,13 +59,14 @@ public class ResumeMatchService {
 				resumeMatchRepository.countByMatchedAtBetween(startOfLastMonth, now));
 	}
 
-	public Page<ResumeMatchDto> findAll(Long assignmentId, Long resumeId, Boolean decisionNotNull, String decision,
-			Pageable pageable) {
+	public Page<ResumeMatchDto> findAll(Long assignmentId, Long resumeId, String assignmentTitle, String resumeFileName,
+			String ownerName, Boolean includeNegativeDecisions, String decision, Pageable pageable) {
 		if (decision != null && !VALID_DECISIONS.contains(decision)) {
 			throw new IllegalArgumentException(
 					"Invalid decision value: '" + decision + "'. Allowed values: no, maybe, yes, strong_yes");
 		}
-		Specification<ResumeMatch> spec = buildSpec(assignmentId, resumeId, decisionNotNull, decision);
+		Specification<ResumeMatch> spec = buildSpec(assignmentId, resumeId, assignmentTitle, resumeFileName, ownerName,
+				includeNegativeDecisions, decision);
 		Page<ResumeMatch> page = resumeMatchRepository.findAll(spec, pageable);
 		return enrichPage(page);
 	}
@@ -157,26 +161,57 @@ public class ResumeMatchService {
 				rm.getJudgedAt(), rm.getJudgeModel());
 	}
 
-	private static Specification<ResumeMatch> buildSpec(Long assignmentId, Long resumeId, Boolean decisionNotNull,
-			String decision) {
+	private static Specification<ResumeMatch> buildSpec(Long assignmentId, Long resumeId, String assignmentTitle,
+			String resumeFileName, String ownerName, Boolean includeNegativeDecisions, String decision) {
 		return (root, query, cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
+
 			if (assignmentId != null) {
 				predicates.add(cb.equal(root.get("assignmentId"), assignmentId));
 			}
 			if (resumeId != null) {
 				predicates.add(cb.equal(root.get("resumeId"), resumeId));
 			}
-			if (decisionNotNull != null) {
-				if (decisionNotNull) {
-					predicates.add(cb.isNotNull(root.get("decision")));
-				} else {
-					predicates.add(cb.isNull(root.get("decision")));
-				}
+
+			if (assignmentTitle != null && !assignmentTitle.isBlank()) {
+				Subquery<Long> sub = query.subquery(Long.class);
+				Root<Assignment> aRoot = sub.from(Assignment.class);
+				sub.select(aRoot.<Long>get("id"))
+						.where(cb.like(cb.lower(aRoot.get("title")), "%" + assignmentTitle.toLowerCase() + "%"));
+				predicates.add(root.get("assignmentId").in(sub));
 			}
+
+			if (resumeFileName != null && !resumeFileName.isBlank()) {
+				Subquery<Long> sub = query.subquery(Long.class);
+				Root<Resume> rRoot = sub.from(Resume.class);
+				sub.select(rRoot.<Long>get("id"))
+						.where(cb.like(cb.lower(rRoot.get("fileName")), "%" + resumeFileName.toLowerCase() + "%"));
+				predicates.add(root.get("resumeId").in(sub));
+			}
+
+			if (ownerName != null && !ownerName.isBlank()) {
+				Subquery<Long> sub = query.subquery(Long.class);
+				Root<Resume> rRoot = sub.from(Resume.class);
+				Join<Resume, AssignmentSeeker> ownerJoin = rRoot.join("owner");
+				predicates.add(root.get("resumeId")
+						.in(sub.select(rRoot.<Long>get("id"))
+								.where(cb.like(
+										cb.lower(cb.concat(cb.concat(ownerJoin.<String>get("firstName"), " "),
+												ownerJoin.<String>get("lastName"))),
+										"%" + ownerName.toLowerCase() + "%"))));
+			}
+
+			// Default: exclude null decisions and "no" decisions.
+			// Pass includeNegativeDecisions=true to include them.
+			if (!Boolean.TRUE.equals(includeNegativeDecisions)) {
+				predicates.add(cb.isNotNull(root.get("decision")));
+				predicates.add(cb.notEqual(root.get("decision"), "no"));
+			}
+
 			if (decision != null) {
 				predicates.add(cb.equal(root.get("decision"), decision));
 			}
+
 			return cb.and(predicates.toArray(new Predicate[0]));
 		};
 	}

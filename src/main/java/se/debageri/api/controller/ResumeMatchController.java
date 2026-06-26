@@ -42,15 +42,20 @@ public class ResumeMatchController {
 	}
 
 	@GetMapping
-	@Operation(summary = "Get all resume matches with optional filtering and pagination")
+	@Operation(summary = "Get all resume matches with optional filtering and pagination. "
+			+ "By default only positive decisions (not null, not 'no') are returned; "
+			+ "pass includeNegativeDecisions=true to include null and 'no' decisions as well.")
 	public ResponseEntity<Page<ResumeMatchDto>> getAll(
-			@Parameter(description = "Filter by assignment ID") @RequestParam(required = false) Long assignmentId,
-			@Parameter(description = "Filter by resume ID") @RequestParam(required = false) Long resumeId,
-			@Parameter(description = "Filter by decision presence: true = has decision, false = no decision") @RequestParam(required = false) Boolean decisionNotNull,
-			@Parameter(description = "Filter by decision value (no, maybe, yes, strong_yes)") @RequestParam(required = false) String decision,
+			@Parameter(description = "Filter by exact assignment ID") @RequestParam(required = false) Long assignmentId,
+			@Parameter(description = "Filter by exact resume ID") @RequestParam(required = false) Long resumeId,
+			@Parameter(description = "Filter by assignment title (partial, case-insensitive)") @RequestParam(required = false) String assignmentTitle,
+			@Parameter(description = "Filter by resume file name (partial, case-insensitive)") @RequestParam(required = false) String resumeFileName,
+			@Parameter(description = "Filter by owner full name (partial, case-insensitive)") @RequestParam(required = false) String ownerName,
+			@Parameter(description = "When true, include null and 'no' decisions. Default false: only positive decisions (maybe, yes, strong_yes) are returned") @RequestParam(required = false) Boolean includeNegativeDecisions,
+			@Parameter(description = "Filter by exact decision value (no, maybe, yes, strong_yes)") @RequestParam(required = false) String decision,
 			@ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
-		return ResponseEntity
-				.ok(resumeMatchService.findAll(assignmentId, resumeId, decisionNotNull, decision, pageable));
+		return ResponseEntity.ok(resumeMatchService.findAll(assignmentId, resumeId, assignmentTitle, resumeFileName,
+				ownerName, includeNegativeDecisions, decision, pageable));
 	}
 
 	@GetMapping("/{id}")
