@@ -124,8 +124,9 @@ class ResumeMatchControllerTest {
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 85, 0.85));
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6));
 
-		// When
-		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches", JsonNode.class);
+		// When — includeNegativeDecisions=true to see matches regardless of decision
+		ResponseEntity<JsonNode> response = restTemplate
+				.getForEntity("/api/resume-matches?includeNegativeDecisions=true", JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -137,8 +138,10 @@ class ResumeMatchControllerTest {
 		// Given
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
 
-		// When
-		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches", JsonNode.class);
+		// When — includeNegativeDecisions=true to retrieve the match regardless of
+		// decision
+		ResponseEntity<JsonNode> response = restTemplate
+				.getForEntity("/api/resume-matches?includeNegativeDecisions=true", JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -164,9 +167,10 @@ class ResumeMatchControllerTest {
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6));
 
-		// When
-		ResponseEntity<JsonNode> response = restTemplate
-				.getForEntity("/api/resume-matches?assignmentId=" + savedAssignment.getId(), JsonNode.class);
+		// When — includeNegativeDecisions=true so the decision-less matches are visible
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity(
+				"/api/resume-matches?assignmentId=" + savedAssignment.getId() + "&includeNegativeDecisions=true",
+				JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -181,9 +185,10 @@ class ResumeMatchControllerTest {
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
 		resumeMatchRepository.save(buildMatch(savedResume.getId() + 1, savedAssignment.getId(), 60, 0.6));
 
-		// When
-		ResponseEntity<JsonNode> response = restTemplate
-				.getForEntity("/api/resume-matches?resumeId=" + savedResume.getId(), JsonNode.class);
+		// When — includeNegativeDecisions=true so the decision-less matches are visible
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity(
+				"/api/resume-matches?resumeId=" + savedResume.getId() + "&includeNegativeDecisions=true",
+				JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -193,18 +198,21 @@ class ResumeMatchControllerTest {
 	}
 
 	@Test
-	void shouldFilterByDecisionNotNull_true() {
-		// Given
-		ResumeMatch withDecision = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
-		withDecision.setDecision("yes");
-		resumeMatchRepository.save(withDecision);
+	void shouldExcludeNullAndNoDecisions_byDefault() {
+		// Given — one positive-decision match, one null-decision match, one "no" match
+		ResumeMatch yesMatch = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		yesMatch.setDecision("yes");
+		resumeMatchRepository.save(yesMatch);
 
-		ResumeMatch withoutDecision = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6);
-		resumeMatchRepository.save(withoutDecision);
+		ResumeMatch nullMatch = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6);
+		resumeMatchRepository.save(nullMatch);
 
-		// When
-		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decisionNotNull=true",
-				JsonNode.class);
+		ResumeMatch noMatch = buildMatch(savedResume.getId(), savedAssignment.getId() + 2, 40, 0.4);
+		noMatch.setDecision("no");
+		resumeMatchRepository.save(noMatch);
+
+		// When — no includeNegativeDecisions param → default excludes null and "no"
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches", JsonNode.class);
 
 		// Then
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -213,24 +221,120 @@ class ResumeMatchControllerTest {
 	}
 
 	@Test
-	void shouldFilterByDecisionNotNull_false() {
-		// Given
-		ResumeMatch withDecision = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
-		withDecision.setDecision("yes");
-		resumeMatchRepository.save(withDecision);
+	void shouldIncludeNegativeDecisions_whenFlagIsTrue() {
+		// Given — one positive-decision match, one null-decision match, one "no" match
+		ResumeMatch yesMatch = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		yesMatch.setDecision("yes");
+		resumeMatchRepository.save(yesMatch);
 
-		ResumeMatch withoutDecision = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6);
-		resumeMatchRepository.save(withoutDecision);
+		ResumeMatch nullMatch = buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6);
+		resumeMatchRepository.save(nullMatch);
+
+		ResumeMatch noMatch = buildMatch(savedResume.getId(), savedAssignment.getId() + 2, 40, 0.4);
+		noMatch.setDecision("no");
+		resumeMatchRepository.save(noMatch);
 
 		// When
-		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?decisionNotNull=false",
+		ResponseEntity<JsonNode> response = restTemplate
+				.getForEntity("/api/resume-matches?includeNegativeDecisions=true", JsonNode.class);
+
+		// Then — all three matches are returned
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(3);
+	}
+
+	@Test
+	void shouldFilterByAssignmentTitle_partialMatch() {
+		// Given — two assignments with different titles, each with a positive-decision
+		// match
+		Assignment otherAssignment = new Assignment();
+		otherAssignment.setJobId(99999L);
+		otherAssignment.setTitle("Something Else");
+		otherAssignment = assignmentRepository.save(otherAssignment);
+
+		ResumeMatch m1 = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		m1.setDecision("yes");
+		resumeMatchRepository.save(m1);
+
+		ResumeMatch m2 = buildMatch(savedResume.getId(), otherAssignment.getId(), 70, 0.7);
+		m2.setDecision("yes");
+		resumeMatchRepository.save(m2);
+
+		// When — partial, case-insensitive match on "test role"
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?assignmentTitle=test+role",
 				JsonNode.class);
 
-		// Then
+		// Then — only the match linked to "Test Role" is returned
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
-		JsonNode decisionNode = response.getBody().get("content").get(0).path("decision");
-		assertThat(decisionNode.isNull() || decisionNode.isMissingNode()).isTrue();
+		assertThat(response.getBody().get("content").get(0).get("assignment").get("title").asText())
+				.isEqualTo("Test Role");
+	}
+
+	@Test
+	void shouldFilterByResumeFileName_partialMatch() {
+		// Given — two resumes with different file names
+		Resume otherResume = new Resume();
+		otherResume.setOwner(savedSeeker);
+		otherResume.setFileName("other-cv.pdf");
+		otherResume.setContentType("application/pdf");
+		otherResume.setNotificationType(NotificationType.User);
+		otherResume.setPdfBytes(new byte[]{});
+		otherResume = resumeRepository.save(otherResume);
+
+		ResumeMatch m1 = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		m1.setDecision("yes");
+		resumeMatchRepository.save(m1);
+
+		ResumeMatch m2 = buildMatch(otherResume.getId(), savedAssignment.getId() + 1, 70, 0.7);
+		m2.setDecision("yes");
+		resumeMatchRepository.save(m2);
+
+		// When — partial match on "match-test"
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?resumeFileName=match-test",
+				JsonNode.class);
+
+		// Then — only the match linked to "match-test.pdf" is returned
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("content").get(0).get("resume").get("fileName").asText())
+				.isEqualTo("match-test.pdf");
+	}
+
+	@Test
+	void shouldFilterByOwnerName_partialMatch() {
+		// Given — two seekers owning separate resumes, each resume has a match
+		AssignmentSeeker otherSeeker = new AssignmentSeeker();
+		otherSeeker.setFirstName("Jane");
+		otherSeeker.setLastName("Doe");
+		otherSeeker.setEmail("jane.doe@example.com");
+		otherSeeker = seekerRepository.save(otherSeeker);
+
+		Resume otherResume = new Resume();
+		otherResume.setOwner(otherSeeker);
+		otherResume.setFileName("jane.pdf");
+		otherResume.setContentType("application/pdf");
+		otherResume.setNotificationType(NotificationType.User);
+		otherResume.setPdfBytes(new byte[]{});
+		otherResume = resumeRepository.save(otherResume);
+
+		ResumeMatch m1 = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		m1.setDecision("yes");
+		resumeMatchRepository.save(m1);
+
+		ResumeMatch m2 = buildMatch(otherResume.getId(), savedAssignment.getId() + 1, 70, 0.7);
+		m2.setDecision("yes");
+		resumeMatchRepository.save(m2);
+
+		// When — partial match on owner name "seeker" (matches "Test Seeker")
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches?ownerName=seeker",
+				JsonNode.class);
+
+		// Then — only the match whose resume owner is "Test Seeker" is returned
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalElements").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("content").get(0).get("resume").get("ownerFullName").asText())
+				.isEqualTo("Test Seeker");
 	}
 
 	@Test
