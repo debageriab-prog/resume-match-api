@@ -21,3 +21,8 @@ app:
   elastic:
     url: "http://localhost:9999"
     index: "assignments_v1"
+
+management:
+  health:
+    elasticsearch:
+      enabled: false
