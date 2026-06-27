@@ -46,6 +46,15 @@ springdoc:
     display-request-duration: true
   packages-to-scan: se.debageri.api.controller
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
 logging:
   level:
     root: INFO
