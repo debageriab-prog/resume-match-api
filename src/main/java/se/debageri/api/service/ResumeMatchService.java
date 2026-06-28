@@ -53,10 +53,11 @@ public class ResumeMatchService {
 		Instant startOfToday = today.atStartOfDay(cet).toInstant();
 		Instant startOfLastWeek = today.minusDays(7).atStartOfDay(cet).toInstant();
 		Instant startOfLastMonth = today.minusDays(30).atStartOfDay(cet).toInstant();
-		return new StatisticsResponse(resumeMatchRepository.count(),
-				resumeMatchRepository.countByMatchedAtBetween(startOfToday, now),
-				resumeMatchRepository.countByMatchedAtBetween(startOfLastWeek, now),
-				resumeMatchRepository.countByMatchedAtBetween(startOfLastMonth, now));
+		return new StatisticsResponse(
+				resumeMatchRepository.countByDecisionIsNotNullAndDecisionNot("no"),
+				resumeMatchRepository.countByDecisionIsNotNullAndDecisionNotAndMatchedAtBetween("no", startOfToday, now),
+				resumeMatchRepository.countByDecisionIsNotNullAndDecisionNotAndMatchedAtBetween("no", startOfLastWeek, now),
+				resumeMatchRepository.countByDecisionIsNotNullAndDecisionNotAndMatchedAtBetween("no", startOfLastMonth, now));
 	}
 
 	public Page<ResumeMatchDto> findAll(Long assignmentId, Long resumeId, String assignmentTitle, String resumeFileName,

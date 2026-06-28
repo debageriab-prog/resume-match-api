@@ -549,20 +549,47 @@ class ResumeMatchControllerTest {
 	}
 
 	@Test
-	void shouldReturnStatistics_withCountsReflectingSeededData() {
-		// Given
-		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8));
+	void shouldReturnStatistics_excludingNullAndNoDecisions() {
+		// Given — one valid match, one null-decision match, one "no" match
+		ResumeMatch yesMatch = buildMatch(savedResume.getId(), savedAssignment.getId(), 80, 0.8);
+		yesMatch.setDecision("yes");
+		resumeMatchRepository.save(yesMatch);
+
 		resumeMatchRepository.save(buildMatch(savedResume.getId(), savedAssignment.getId() + 1, 60, 0.6));
+
+		ResumeMatch noMatch = buildMatch(savedResume.getId(), savedAssignment.getId() + 2, 40, 0.4);
+		noMatch.setDecision("no");
+		resumeMatchRepository.save(noMatch);
 
 		// When
 		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/statistics", JsonNode.class);
 
-		// Then
+		// Then — only the "yes" match is counted
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(2);
-		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(2);
-		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(2);
-		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(2);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(1);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(1);
+	}
+
+	@Test
+	void shouldReturnStatistics_countingAllValidDecisions() {
+		// Given — matches with each non-excluded decision value
+		for (String dec : new String[]{"yes", "maybe", "strong_yes"}) {
+			ResumeMatch m = buildMatch(savedResume.getId(), savedAssignment.getId() + dec.length(), 70, 0.7);
+			m.setDecision(dec);
+			resumeMatchRepository.save(m);
+		}
+
+		// When
+		ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/resume-matches/statistics", JsonNode.class);
+
+		// Then — all three valid-decision matches are counted
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+		assertThat(response.getBody().get("totalCount").asLong()).isEqualTo(3);
+		assertThat(response.getBody().get("todayCount").asLong()).isEqualTo(3);
+		assertThat(response.getBody().get("lastWeekCount").asLong()).isEqualTo(3);
+		assertThat(response.getBody().get("lastMonthCount").asLong()).isEqualTo(3);
 	}
 
 	// ──────────────────────────────────────────────────────────────────────────
