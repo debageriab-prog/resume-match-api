@@ -29,6 +29,10 @@ public interface ResumeMatchRepository extends JpaRepository<ResumeMatch, Long>,
 
 	long countByMatchedAtBetween(Instant start, Instant end);
 
+	long countByDecisionIsNotNullAndDecisionNot(String decision);
+
+	long countByDecisionIsNotNullAndDecisionNotAndMatchedAtBetween(String decision, Instant start, Instant end);
+
 	long countByResumeIdAndDecisionIsNotNullAndDecisionNot(Long resumeId, String decision);
 
 	interface AssignmentMatchCountRow {
